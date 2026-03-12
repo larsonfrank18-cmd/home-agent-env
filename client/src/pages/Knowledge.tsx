@@ -276,7 +276,7 @@ function EntryForm({ initial, onClose, onSaved }: EntryFormProps) {
             )}
             {/* 支持格式说明 */}
             <p className="text-xs text-gray-500 mb-1">
-              支持上传：PDF · Word(.docx) · Excel(.xlsx/.csv) · 图片(jpg/png) · 文本(.txt/.md)，最大 20MB
+              支持上传：PDF · Word(.docx) · Excel(.xlsx/.csv) · 图片(jpg/png) · 文本(.txt/.md)，最大 30MB
             </p>
             {preview ? (
               <div className="min-h-[200px] p-3 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-200 prose prose-invert prose-sm max-w-none">

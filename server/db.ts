@@ -1,4 +1,4 @@
-import { eq, or, desc } from "drizzle-orm";
+import { eq, or, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, User, users, generationHistory, GenerationHistory, InsertGenerationHistory, trendData, TrendData, InsertTrendData } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -178,7 +178,7 @@ export async function getUserGenerationHistory(userId: number, type?: string, li
     return db
       .select()
       .from(generationHistory)
-      .where(eq(generationHistory.userId, userId) && eq(generationHistory.type, type as any))
+      .where(and(eq(generationHistory.userId, userId), eq(generationHistory.type, type as any)))
       .orderBy(desc(generationHistory.createdAt))
       .limit(limit);
   }

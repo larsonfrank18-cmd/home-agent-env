@@ -10,6 +10,10 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { invokeLLM } from "../_core/llm";
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
+import { execSync } from "child_process";
+import { writeFileSync, readFileSync, unlinkSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 
 // ─── 文件类型检测 ─────────────────────────────────────────────────
 
@@ -111,9 +115,48 @@ function parseCsv(buffer: Buffer): string {
   return buffer.toString("utf-8").trim();
 }
 
+// ─── .ppt 到 .pptx 转换 ───────────────────────────────────────────
+
+async function convertPptToPptx(buffer: Buffer): Promise<Buffer> {
+  const tempDir = tmpdir();
+  const inputFile = join(tempDir, `ppt-${nanoid()}.ppt`);
+  const outputFile = join(tempDir, `ppt-${nanoid()}.pptx`);
+
+  try {
+    // 写入临时 .ppt 文件
+    writeFileSync(inputFile, buffer);
+
+    // 使用 LibreOffice 进行转换
+    execSync(
+      `libreoffice --headless --convert-to pptx --outdir ${tempDir} ${inputFile}`,
+      { timeout: 30000 }
+    );
+
+    // 读取转换后的 .pptx 文件
+    const outputBuffer = readFileSync(outputFile);
+
+    // 清理临时文件
+    unlinkSync(inputFile);
+    unlinkSync(outputFile);
+
+    return outputBuffer;
+  } catch (e) {
+    // 清理临时文件
+    try {
+      unlinkSync(inputFile);
+    } catch {}
+    try {
+      unlinkSync(outputFile);
+    } catch {}
+
+    console.error("[fileParser] PPT to PPTX conversion error:", e);
+    throw new Error(".ppt 文件转换失败，请确保文件格式正确或手动转换为 .pptx 格式");
+  }
+}
+
 // ─── PowerPoint 解析 ──────────────────────────────────────────────
 
-async function parsePowerPoint(buffer: Buffer): Promise<string> {
+async function parsePowerPoint(buffer: Buffer, isRetry: boolean = false): Promise<string> {
   try {
     // 使用 adm-zip 提取 PPTX 文件内容
     const AdmZip = await import("adm-zip");
@@ -147,10 +190,17 @@ async function parsePowerPoint(buffer: Buffer): Promise<string> {
     return lines.join("\n").trim() || "PowerPoint 文件内容为空";
   } catch (e) {
     console.error("[fileParser] PowerPoint parse error:", e);
-    // 如果是 .ppt 旧格式文件，返回友好提示
+    // 如果是 .ppt 旧格式文件，尝试自动转换
     const errorMsg = (e as any).message || "";
-    if (errorMsg.includes("Invalid or unsupported zip format") || errorMsg.includes("No END header found")) {
-      throw new Error("检测到 .ppt 旧格式文件。请将文件转换为 .pptx 格式后重新上传，或直接上传 .pptx 文件。");
+    if (!isRetry && (errorMsg.includes("Invalid or unsupported zip format") || errorMsg.includes("No END header found"))) {
+      console.log("[fileParser] Detected .ppt old format, attempting auto-conversion...");
+      try {
+        const convertedBuffer = await convertPptToPptx(buffer);
+        return await parsePowerPoint(convertedBuffer, true);
+      } catch (conversionError) {
+        console.error("[fileParser] Auto-conversion failed:", conversionError);
+        throw conversionError;
+      }
     }
     throw new Error("PowerPoint 文件解析失败，请确认文件格式为 .pptx");
   }

@@ -140,9 +140,18 @@ async function parsePowerPoint(buffer: Buffer): Promise<string> {
       }
     }
 
+    if (slideNum === 0) {
+      throw new Error("未能从 PPTX 文件中提取幻灯片");
+    }
+
     return lines.join("\n").trim() || "PowerPoint 文件内容为空";
   } catch (e) {
     console.error("[fileParser] PowerPoint parse error:", e);
+    // 如果是 .ppt 旧格式文件，返回友好提示
+    const errorMsg = (e as any).message || "";
+    if (errorMsg.includes("Invalid or unsupported zip format") || errorMsg.includes("No END header found")) {
+      throw new Error("检测到 .ppt 旧格式文件。请将文件转换为 .pptx 格式后重新上传，或直接上传 .pptx 文件。");
+    }
     throw new Error("PowerPoint 文件解析失败，请确认文件格式为 .pptx");
   }
 }

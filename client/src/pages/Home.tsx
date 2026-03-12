@@ -1,31 +1,31 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { getLoginUrl } from "@/const";
-import { Streamdown } from 'streamdown';
+/* =============================================================
+   主页面 - 家居建材爆款文案智能体
+   简化版：Hero + 核心功能 + 行业类目 + CTA
+   ============================================================= */
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Workflow, Frontend Best Practices, Design Guide and Common Pitfalls
- */
+import Navbar from "@/components/Navbar";
+import HeroSection from "@/components/HeroSection";
+import FunctionMatrix from "@/components/FunctionMatrix";
+import IndustrySection from "@/components/IndustrySection";
+import CtaSection from "@/components/CtaSection";
+
 export default function Home() {
-  // The userAuth hooks provides authentication state
-  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
-
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* 固定导航 */}
+      <Navbar />
+
+      {/* 首屏英雄区 */}
+      <HeroSection />
+
+      {/* 核心功能 */}
+      <FunctionMatrix />
+
+      {/* 行业类目 */}
+      <IndustrySection />
+
+      {/* CTA + Footer */}
+      <CtaSection />
     </div>
   );
 }

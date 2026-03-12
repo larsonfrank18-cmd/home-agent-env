@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `generation_history` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`type` enum('copywriter','dm','disc') NOT NULL,\n\t`inputParams` text NOT NULL,\n\t`result` text NOT NULL,\n\t`model` varchar(50),\n\t`duration` int,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `generation_history_id` PRIMARY KEY(`id`)\n);\n\nCREATE TABLE `trend_data` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`keyword` varchar(200) NOT NULL,\n\t`platform` varchar(50) NOT NULL,\n\t`data` text NOT NULL,\n\t`sourceUrl` varchar(500),\n\t`expiresAt` timestamp,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `trend_data_id` PRIMARY KEY(`id`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user hxeJVEzKMq6JhaS.6041d1e07da2 --database 5532bcoCsDCMsE8McGw6DK --execute CREATE TABLE `generation_history` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`type` enum('copywriter','dm','disc') NOT NULL,\n\t`inputParams` text NOT NULL,\n\t`result` text NOT NULL,\n\t`model` varchar(50),\n\t`duration` int,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `generation_history_id` PRIMARY KEY(`id`)\n);\n\nCREATE TABLE `trend_data` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`keyword` varchar(200) NOT NULL,\n\t`platform` varchar(50) NOT NULL,\n\t`data` text NOT NULL,\n\t`sourceUrl` varchar(500),\n\t`expiresAt` timestamp,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\tCONSTRAINT `trend_data_id` PRIMARY KEY(`id`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 491
+}

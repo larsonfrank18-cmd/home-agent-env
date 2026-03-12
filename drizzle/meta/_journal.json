@@ -1,5 +1,48 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1773216325459,
+      "tag": "0000_common_blonde_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1773219816447,
+      "tag": "0001_bored_madelyne_pryor",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773223488269,
+      "tag": "0002_glamorous_cerise",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1773287524550,
+      "tag": "0003_fast_captain_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1773299837296,
+      "tag": "0004_lush_silver_sable",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1773317988060,
+      "tag": "0005_chilly_princess_powerful",
+      "breakpoints": true
+    }
+  ]
 }

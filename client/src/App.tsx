@@ -5,12 +5,25 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import Generator from "./pages/Generator";
+import Login from "./pages/Login";
+import Admin from "./pages/Admin";
+import Knowledge from "./pages/Knowledge";
+import DMAssistant from "./pages/DMAssistant";
+import DiscAnalyzer from "./pages/DiscAnalyzer";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/generator"} component={Generator} />
+      <Route path={"/login"} component={Login} />
+      <Route path={"/admin"} component={Admin} />
+      <Route path={"/knowledge"} component={Knowledge} />
+      <Route path={"/dm-assistant"} component={DMAssistant} />
+      <Route path={"/disc-analyzer"} component={DiscAnalyzer} />
+      <Route path={"/forgot-password"} component={ForgotPassword} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
@@ -18,18 +31,10 @@ function Router() {
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
           <Router />

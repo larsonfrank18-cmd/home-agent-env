@@ -34,6 +34,31 @@ function getMonthStr(): string {
   return getTodayStr().slice(0, 7);
 }
 
+/** 获取今日 Date 对象（UTC+8 的午夜） */
+function getTodayDate(): Date {
+  const todayStr = getTodayStr();
+  return new Date(todayStr + 'T00:00:00Z');
+}
+
+/** 获取下一天 Date 对象 */
+function getTomorrowDate(): Date {
+  const todayDate = getTodayDate();
+  return new Date(todayDate.getTime() + 24 * 60 * 60 * 1000);
+}
+
+/** 获取本月开始日期 Date 对象 */
+function getMonthStartDate(): Date {
+  const monthStr = getMonthStr();
+  return new Date(monthStr + '-01T00:00:00Z');
+}
+
+/** 获取下个月开始日期 Date 对象 */
+function getNextMonthStartDate(): Date {
+  const today = getTodayDate();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  return nextMonth;
+}
+
 export const adminUsersRouter = router({
   /**
    * 获取用户列表（含今日/本月使用量）
@@ -81,23 +106,37 @@ export const adminUsersRouter = router({
         .offset(offset);
 
       // 查询今日使用量
+      const todayDate = getTodayDate();
+      const tomorrowDate = getTomorrowDate();
       const todayUsage = await db
         .select({
           userId: apiUsageLogs.userId,
           total: sql<number>`COALESCE(SUM(dailyCount), 0)`,
         })
         .from(apiUsageLogs)
-        .where(sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m-%d') = ${today}`)
+        .where(
+          and(
+            sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
+            sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
+          )
+        )
         .groupBy(apiUsageLogs.userId);
 
       // 查询本月使用量
+      const monthStart = getMonthStartDate();
+      const monthEnd = getNextMonthStartDate();
       const monthUsage = await db
         .select({
           userId: apiUsageLogs.userId,
           total: sql<number>`COALESCE(SUM(dailyCount), 0)`,
         })
         .from(apiUsageLogs)
-        .where(sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m') = ${month}`)
+        .where(
+          and(
+            sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
+            sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+          )
+        )
         .groupBy(apiUsageLogs.userId);
 
       const todayMap = new Map(todayUsage.map((r) => [r.userId, Number(r.total)]));
@@ -258,6 +297,10 @@ export const adminUsersRouter = router({
 
     const today = getTodayStr();
     const month = getMonthStr();
+    const todayDate = getTodayDate();
+    const tomorrowDate = getTomorrowDate();
+    const monthStart = getMonthStartDate();
+    const monthEnd = getNextMonthStartDate();
 
     // 用户总数
     const totalUsersResult = await db
@@ -283,13 +326,23 @@ export const adminUsersRouter = router({
     const todayCallsResult = await db
       .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
       .from(apiUsageLogs)
-      .where(sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m-%d') = ${today}`);
+      .where(
+        and(
+          sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
+          sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
+        )
+      );
 
     // 本月总调用次数
     const monthCallsResult = await db
       .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
       .from(apiUsageLogs)
-      .where(sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m') = ${month}`);
+      .where(
+        and(
+          sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
+          sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+        )
+      );
 
     // 各功能调用分布（本月）
     const featureStats = await db
@@ -298,7 +351,12 @@ export const adminUsersRouter = router({
         total: sql<number>`COALESCE(SUM(dailyCount), 0)`,
       })
       .from(apiUsageLogs)
-      .where(sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m') = ${month}`)
+      .where(
+        and(
+          sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
+          sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+        )
+      )
       .groupBy(apiUsageLogs.feature);
 
     return {

@@ -33,6 +33,26 @@ function getTodayStr(): string {
   return cst.toISOString().slice(0, 10);
 }
 
+/** 获取今日 Date 对象（UTC+8 的午夜） */
+function getTodayDate(): Date {
+  const todayStr = getTodayStr();
+  // 创建 UTC 时间的午夜
+  return new Date(todayStr + 'T00:00:00Z');
+}
+
+/** 获取本月开始日期 Date 对象 */
+function getMonthStartDate(): Date {
+  const monthStr = getMonthStr();
+  return new Date(monthStr + '-01T00:00:00Z');
+}
+
+/** 获取下个月开始日期 Date 对象 */
+function getNextMonthStartDate(): Date {
+  const today = getTodayDate();
+  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  return nextMonth;
+}
+
 /** 获取本月字符串 YYYY-MM */
 function getMonthStr(): string {
   return getTodayStr().slice(0, 7);
@@ -107,14 +127,17 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
   const today = getTodayStr();
   const month = getMonthStr();
 
-  // 4. 查询今日调用次数（所有功能合计）
+  // 5. 查询今日调用次数（所有功能合计）
+  const todayDate = getTodayDate();
+  const tomorrowDate = new Date(todayDate.getTime() + 24 * 60 * 60 * 1000);
   const todayRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
     .from(apiUsageLogs)
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m-%d') = ${today}`
+        sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
+        sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
       )
     );
 
@@ -127,13 +150,16 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
   }
 
   // 5. 查询本月调用次数（所有功能合计）
+  const monthStart = getMonthStartDate();
+  const monthEnd = getNextMonthStartDate();
   const monthRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
     .from(apiUsageLogs)
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m') = ${month}`
+        sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
+        sql`${apiUsageLogs.usageDate} < ${monthEnd}`
       )
     );
 
@@ -152,7 +178,8 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m-%d') = ${today}`,
+        sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
+        sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`,
         eq(apiUsageLogs.feature, feature)
       )
     )
@@ -166,7 +193,7 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
   } else {
     await db.insert(apiUsageLogs).values({
       userId,
-      usageDate: today as unknown as Date,
+      usageDate: todayDate,
       dailyCount: 1,
       feature,
     });
@@ -209,8 +236,8 @@ export async function getUsageSummary(userId: number) {
   const dailyLimit = user.customDailyLimit ?? defaultQuota.daily;
   const monthlyLimit = user.customMonthlyLimit ?? defaultQuota.monthly;
 
-  const today = getTodayStr();
-  const month = getMonthStr();
+  const todayDate = getTodayDate();
+  const tomorrowDate = new Date(todayDate.getTime() + 24 * 60 * 60 * 1000);
 
   const todayRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
@@ -218,17 +245,21 @@ export async function getUsageSummary(userId: number) {
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m-%d') = ${today}`
+        sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
+        sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
       )
     );
 
+  const monthStart = getMonthStartDate();
+  const monthEnd = getNextMonthStartDate();
   const monthRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
     .from(apiUsageLogs)
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m') = ${month}`
+        sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
+        sql`${apiUsageLogs.usageDate} < ${monthEnd}`
       )
     );
 

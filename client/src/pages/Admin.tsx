@@ -78,11 +78,11 @@ function UserCard({ user, onRefresh }: { user: UserRow; onRefresh: () => void })
   };
 
   // 合并保存：会员类型 + 配额 + 备注，一次提交
-  const setMembershipMutation = trpc.adminUsers.setMembership.useMutation({
-    onError: (err) => toast.error(`会员设置失败：${err.message}`),
+  const setMembershipMutation = trpc.adminUsers.setMemberType.useMutation({
+    onError: (err: any) => toast.error(`会员设置失败：${err.message}`),
   });
-  const setQuotaMutation = trpc.adminUsers.setUserQuota.useMutation({
-    onError: (err) => toast.error(`配额更新失败：${err.message}`),
+  const setQuotaMutation = trpc.adminUsers.setCustomQuota.useMutation({
+    onError: (err: any) => toast.error(`配额更新失败：${err.message}`),
   });
 
   const setRoleMutation = trpc.userAuth.adminSetRole.useMutation({
@@ -90,36 +90,40 @@ function UserCard({ user, onRefresh }: { user: UserRow; onRefresh: () => void })
       toast.success("角色已更新");
       onRefresh();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const isPending = setMembershipMutation.isPending || setQuotaMutation.isPending;
 
   const handleConfirmSave = async () => {
     try {
-      // 1. 保存会员类型 + 到期时间 + 备注
+      // 1. 保存会员类型 + 到期时间
+      const daysValid =
+        selectedMemberType !== "lifetime" && selectedMemberType !== "free" && expireAt
+          ? Math.ceil(
+              (new Date(expireAt + "T23:59:59+08:00").getTime() - new Date().getTime()) /
+                (24 * 60 * 60 * 1000)
+            )
+          : undefined;
+
       await setMembershipMutation.mutateAsync({
         userId: user.id,
         memberType: selectedMemberType,
-        expireAt:
-          selectedMemberType !== "lifetime" && selectedMemberType !== "free" && expireAt
-            ? new Date(expireAt + "T23:59:59+08:00").toISOString()
-            : null,
-        adminNote: note || undefined,
+        daysValid,
       });
 
-      // 2. 保存自定义配额（无论是否有值都更新，null 表示恢复默认）
+      // 2. 保存自定义配额（无论是否有值都更新，undefined 表示恢复默认）
       await setQuotaMutation.mutateAsync({
         userId: user.id,
-        customDailyLimit: customDaily ? parseInt(customDaily) : null,
-        customMonthlyLimit: customMonthly ? parseInt(customMonthly) : null,
-        adminNote: note || undefined,
+        dailyLimit: customDaily ? parseInt(customDaily) : undefined,
+        monthlyLimit: customMonthly ? parseInt(customMonthly) : undefined,
       });
 
       toast.success("✅ 已保存");
       onRefresh();
-    } catch {
+    } catch (err: any) {
       // 错误已在各自的 onError 中处理
+      console.error("保存失败", err);
     }
   };
 

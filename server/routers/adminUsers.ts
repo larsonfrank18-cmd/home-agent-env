@@ -34,29 +34,21 @@ function getMonthStr(): string {
   return getTodayStr().slice(0, 7);
 }
 
-/** 获取今日 Date 对象（UTC+8 的午夜） */
-function getTodayDate(): Date {
+/** 获取下一天的日期字符串 YYYY-MM-DD */
+function getTomorrowStr(): string {
   const todayStr = getTodayStr();
-  return new Date(todayStr + 'T00:00:00Z');
+  const today = new Date(todayStr + 'T00:00:00Z');
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  return tomorrow.toISOString().slice(0, 10);
 }
 
-/** 获取下一天 Date 对象 */
-function getTomorrowDate(): Date {
-  const todayDate = getTodayDate();
-  return new Date(todayDate.getTime() + 24 * 60 * 60 * 1000);
-}
-
-/** 获取本月开始日期 Date 对象 */
-function getMonthStartDate(): Date {
+/** 获取下一个月的日期字符串 YYYY-MM-DD */
+function getNextMonthStr(): string {
   const monthStr = getMonthStr();
-  return new Date(monthStr + '-01T00:00:00Z');
-}
-
-/** 获取下个月开始日期 Date 对象 */
-function getNextMonthStartDate(): Date {
-  const today = getTodayDate();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  return nextMonth;
+  const [year, month] = monthStr.split('-').map(Number);
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
 }
 
 export const adminUsersRouter = router({
@@ -77,8 +69,6 @@ export const adminUsersRouter = router({
 
       const { page, pageSize, search } = input;
       const offset = (page - 1) * pageSize;
-      const today = getTodayStr();
-      const month = getMonthStr();
 
       // 查询用户列表
       const userList = await db
@@ -106,8 +96,8 @@ export const adminUsersRouter = router({
         .offset(offset);
 
       // 查询今日使用量
-      const todayDate = getTodayDate();
-      const tomorrowDate = getTomorrowDate();
+      const todayStr = getTodayStr();
+      const tomorrowStr = getTomorrowStr();
       const todayUsage = await db
         .select({
           userId: apiUsageLogs.userId,
@@ -116,15 +106,15 @@ export const adminUsersRouter = router({
         .from(apiUsageLogs)
         .where(
           and(
-            sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
-            sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
+            sql`${apiUsageLogs.usageDate} >= ${todayStr}`,
+            sql`${apiUsageLogs.usageDate} < ${tomorrowStr}`
           )
         )
         .groupBy(apiUsageLogs.userId);
 
       // 查询本月使用量
-      const monthStart = getMonthStartDate();
-      const monthEnd = getNextMonthStartDate();
+      const monthStr = getMonthStr();
+      const nextMonthStr = getNextMonthStr();
       const monthUsage = await db
         .select({
           userId: apiUsageLogs.userId,
@@ -133,8 +123,8 @@ export const adminUsersRouter = router({
         .from(apiUsageLogs)
         .where(
           and(
-            sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
-            sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+            sql`${apiUsageLogs.usageDate} >= ${monthStr}`,
+            sql`${apiUsageLogs.usageDate} < ${nextMonthStr}`
           )
         )
         .groupBy(apiUsageLogs.userId);
@@ -158,86 +148,71 @@ export const adminUsersRouter = router({
             : u.memberType;
 
         const defaultQuota = DEFAULT_QUOTAS[effectiveMember];
+        const dailyLimit = u.customDailyLimit ?? defaultQuota.daily;
+        const monthlyLimit = u.customMonthlyLimit ?? defaultQuota.monthly;
+
         return {
-          ...u,
-          effectiveMemberType: effectiveMember,
-          dailyUsed: todayMap.get(u.id) ?? 0,
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          openId: u.openId,
+          role: u.role,
+          isPaid: u.isPaid,
+          memberType: u.memberType,
+          effectiveMember,
+          paidAt: u.paidAt,
+          paidExpireAt: u.paidExpireAt,
+          adminNote: u.adminNote,
+          createdAt: u.createdAt,
+          lastSignedIn: u.lastSignedIn,
+          passwordPlain: u.passwordPlain,
+          todayUsed: todayMap.get(u.id) ?? 0,
+          dailyLimit,
           monthlyUsed: monthMap.get(u.id) ?? 0,
-          effectiveDailyLimit: u.customDailyLimit ?? defaultQuota.daily,
-          effectiveMonthlyLimit: u.customMonthlyLimit ?? defaultQuota.monthly,
+          monthlyLimit,
         };
       });
 
-      return { users: result, total, page, pageSize };
+      return {
+        data: result,
+        total,
+        page,
+        pageSize,
+      };
     }),
 
   /**
-   * 获取单个用户详情（含使用历史）
+   * 开通或修改用户会员等级
    */
-  getUserDetail: adminProcedure
-    .input(z.object({ userId: z.number().int() }))
-    .query(async ({ input }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库不可用" });
-
-      const userRows = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, input.userId))
-        .limit(1);
-
-      if (!userRows.length) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "用户不存在" });
-      }
-
-      // 最近30天使用记录
-      const usageLogs = await db
-        .select()
-        .from(apiUsageLogs)
-        .where(
-          and(
-            eq(apiUsageLogs.userId, input.userId),
-            sql`${apiUsageLogs.usageDate} >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)`
-          )
-        )
-        .orderBy(desc(apiUsageLogs.usageDate));
-
-      return { user: userRows[0], usageLogs };
-    }),
-
-  /**
-   * 开通/修改会员等级
-   */
-  setMembership: adminProcedure
+  setMemberType: adminProcedure
     .input(
       z.object({
-        userId: z.number().int(),
+        userId: z.number(),
         memberType: z.enum(["free", "quarterly", "annual", "lifetime"]),
-        /** 到期时间（lifetime 传 null） */
-        expireAt: z.string().nullable().optional(),
-        adminNote: z.string().optional(),
+        daysValid: z.number().optional(), // 仅对 quarterly/annual 有效，指定有效天数
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库不可用" });
 
-      const { userId, memberType, expireAt, adminNote } = input;
+      const { userId, memberType, daysValid } = input;
 
+      let paidAt: Date | null = null;
       let paidExpireAt: Date | null = null;
-      if (memberType === "lifetime") {
-        paidExpireAt = null;
-      } else if (memberType === "free") {
-        paidExpireAt = null;
-      } else if (expireAt) {
-        paidExpireAt = new Date(expireAt);
-      } else {
-        // 自动计算到期时间
-        const now = new Date();
-        if (memberType === "quarterly") {
-          paidExpireAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-        } else if (memberType === "annual") {
-          paidExpireAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+      let isPaid = false;
+
+      if (memberType !== "free") {
+        paidAt = new Date();
+        isPaid = true;
+
+        if (memberType === "lifetime") {
+          paidExpireAt = null; // 永久
+        } else {
+          // quarterly 或 annual
+          const days = daysValid ?? (memberType === "quarterly" ? 90 : 365);
+          paidExpireAt = new Date(paidAt.getTime() + days * 24 * 60 * 60 * 1000);
         }
       }
 
@@ -245,45 +220,41 @@ export const adminUsersRouter = router({
         .update(users)
         .set({
           memberType,
-          isPaid: memberType !== "free",
-          paidAt: memberType !== "free" ? new Date() : undefined,
+          isPaid,
+          paidAt,
           paidExpireAt,
-          adminNote: adminNote ?? undefined,
-          updatedAt: new Date(),
         })
         .where(eq(users.id, userId));
 
-      return { success: true, memberType, paidExpireAt };
+      return { success: true };
     }),
 
   /**
-   * 自定义用户调用配额
-   * 传 null 表示恢复默认值
+   * 设置用户自定义配额
    */
-  setUserQuota: adminProcedure
+  setCustomQuota: adminProcedure
     .input(
       z.object({
-        userId: z.number().int(),
-        customDailyLimit: z.number().int().min(0).nullable(),
-        customMonthlyLimit: z.number().int().min(0).nullable(),
-        adminNote: z.string().optional(),
+        userId: z.number(),
+        dailyLimit: z.number().int().min(0).optional(),
+        monthlyLimit: z.number().int().min(0).optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库不可用" });
 
-      const { userId, customDailyLimit, customMonthlyLimit, adminNote } = input;
+      const { userId, dailyLimit, monthlyLimit } = input;
 
-      await db
-        .update(users)
-        .set({
-          customDailyLimit,
-          customMonthlyLimit,
-          adminNote: adminNote ?? undefined,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, userId));
+      const updateSet: Record<string, any> = {};
+      if (dailyLimit !== undefined) updateSet.customDailyLimit = dailyLimit;
+      if (monthlyLimit !== undefined) updateSet.customMonthlyLimit = monthlyLimit;
+
+      if (Object.keys(updateSet).length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "至少需要设置一个配额" });
+      }
+
+      await db.update(users).set(updateSet).where(eq(users.id, userId));
 
       return { success: true };
     }),
@@ -294,13 +265,6 @@ export const adminUsersRouter = router({
   getStats: adminProcedure.query(async () => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库不可用" });
-
-    const today = getTodayStr();
-    const month = getMonthStr();
-    const todayDate = getTodayDate();
-    const tomorrowDate = getTomorrowDate();
-    const monthStart = getMonthStartDate();
-    const monthEnd = getNextMonthStartDate();
 
     // 用户总数
     const totalUsersResult = await db
@@ -323,24 +287,28 @@ export const adminUsersRouter = router({
       .groupBy(users.memberType);
 
     // 今日总调用次数
+    const todayStr = getTodayStr();
+    const tomorrowStr = getTomorrowStr();
     const todayCallsResult = await db
       .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
       .from(apiUsageLogs)
       .where(
         and(
-          sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
-          sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
+          sql`${apiUsageLogs.usageDate} >= ${todayStr}`,
+          sql`${apiUsageLogs.usageDate} < ${tomorrowStr}`
         )
       );
 
     // 本月总调用次数
+    const monthStr = getMonthStr();
+    const nextMonthStr = getNextMonthStr();
     const monthCallsResult = await db
       .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
       .from(apiUsageLogs)
       .where(
         and(
-          sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
-          sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+          sql`${apiUsageLogs.usageDate} >= ${monthStr}`,
+          sql`${apiUsageLogs.usageDate} < ${nextMonthStr}`
         )
       );
 
@@ -353,8 +321,8 @@ export const adminUsersRouter = router({
       .from(apiUsageLogs)
       .where(
         and(
-          sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
-          sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+          sql`${apiUsageLogs.usageDate} >= ${monthStr}`,
+          sql`${apiUsageLogs.usageDate} < ${nextMonthStr}`
         )
       )
       .groupBy(apiUsageLogs.feature);
@@ -370,7 +338,7 @@ export const adminUsersRouter = router({
       monthCalls: Number(monthCallsResult[0]?.total ?? 0),
       featureStats: featureStats.map((r) => ({
         feature: r.feature,
-        count: Number(r.total),
+        total: Number(r.total),
       })),
     };
   }),
@@ -381,13 +349,6 @@ export const adminUsersRouter = router({
   getMyUsage: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return null;
-
-    const today = getTodayStr();
-    const month = getMonthStr();
-    const todayDate = getTodayDate();
-    const tomorrowDate = getTomorrowDate();
-    const monthStart = getMonthStartDate();
-    const monthEnd = getNextMonthStartDate();
 
     const userRows = await db
       .select({
@@ -418,14 +379,19 @@ export const adminUsersRouter = router({
     const dailyLimit = user.customDailyLimit ?? defaultQuota.daily;
     const monthlyLimit = user.customMonthlyLimit ?? defaultQuota.monthly;
 
+    const todayStr = getTodayStr();
+    const tomorrowStr = getTomorrowStr();
+    const monthStr = getMonthStr();
+    const nextMonthStr = getNextMonthStr();
+
     const todayRows = await db
       .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
       .from(apiUsageLogs)
       .where(
         and(
           eq(apiUsageLogs.userId, ctx.user.id),
-          sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
-          sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
+          sql`${apiUsageLogs.usageDate} >= ${todayStr}`,
+          sql`${apiUsageLogs.usageDate} < ${tomorrowStr}`
         )
       );
 
@@ -435,8 +401,8 @@ export const adminUsersRouter = router({
       .where(
         and(
           eq(apiUsageLogs.userId, ctx.user.id),
-          sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
-          sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+          sql`${apiUsageLogs.usageDate} >= ${monthStr}`,
+          sql`${apiUsageLogs.usageDate} < ${nextMonthStr}`
         )
       );
 

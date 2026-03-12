@@ -33,24 +33,21 @@ function getTodayStr(): string {
   return cst.toISOString().slice(0, 10);
 }
 
-/** 获取今日 Date 对象（UTC+8 的午夜） */
-function getTodayDate(): Date {
+/** 获取下一天的日期字符串 YYYY-MM-DD */
+function getTomorrowStr(): string {
   const todayStr = getTodayStr();
-  // 创建 UTC 时间的午夜
-  return new Date(todayStr + 'T00:00:00Z');
+  const today = new Date(todayStr + 'T00:00:00Z');
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+  return tomorrow.toISOString().slice(0, 10);
 }
 
-/** 获取本月开始日期 Date 对象 */
-function getMonthStartDate(): Date {
+/** 获取下一个月的日期字符串 YYYY-MM-DD */
+function getNextMonthStr(): string {
   const monthStr = getMonthStr();
-  return new Date(monthStr + '-01T00:00:00Z');
-}
-
-/** 获取下个月开始日期 Date 对象 */
-function getNextMonthStartDate(): Date {
-  const today = getTodayDate();
-  const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-  return nextMonth;
+  const [year, month] = monthStr.split('-').map(Number);
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  return `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;
 }
 
 /** 获取本月字符串 YYYY-MM */
@@ -128,16 +125,16 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
   const month = getMonthStr();
 
   // 5. 查询今日调用次数（所有功能合计）
-  const todayDate = getTodayDate();
-  const tomorrowDate = new Date(todayDate.getTime() + 24 * 60 * 60 * 1000);
+  const todayStr = getTodayStr();
+  const tomorrowStr = getTomorrowStr();
   const todayRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
     .from(apiUsageLogs)
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
-        sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
+        sql`${apiUsageLogs.usageDate} >= ${todayStr}`,
+        sql`${apiUsageLogs.usageDate} < ${tomorrowStr}`
       )
     );
 
@@ -150,16 +147,16 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
   }
 
   // 5. 查询本月调用次数（所有功能合计）
-  const monthStart = getMonthStartDate();
-  const monthEnd = getNextMonthStartDate();
+  const monthStr = getMonthStr();
+  const nextMonthStr = getNextMonthStr();
   const monthRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
     .from(apiUsageLogs)
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
-        sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+        sql`${apiUsageLogs.usageDate} >= ${monthStr}`,
+        sql`${apiUsageLogs.usageDate} < ${nextMonthStr}`
       )
     );
 
@@ -178,8 +175,8 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
-        sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`,
+        sql`${apiUsageLogs.usageDate} >= ${todayStr}`,
+        sql`${apiUsageLogs.usageDate} < ${tomorrowStr}`,
         eq(apiUsageLogs.feature, feature)
       )
     )
@@ -191,9 +188,10 @@ export async function checkAndRecordUsage(userId: number, feature: FeatureType):
       .set({ dailyCount: (existingRows[0].dailyCount ?? 0) + 1 })
       .where(eq(apiUsageLogs.id, existingRows[0].id));
   } else {
+    // 使用 YYYY-MM-DD 字符串作为日期值，MySQL DATE 类型会自动解析
     await db.insert(apiUsageLogs).values({
       userId,
-      usageDate: todayDate,
+      usageDate: todayStr as any,
       dailyCount: 1,
       feature,
     });
@@ -236,8 +234,8 @@ export async function getUsageSummary(userId: number) {
   const dailyLimit = user.customDailyLimit ?? defaultQuota.daily;
   const monthlyLimit = user.customMonthlyLimit ?? defaultQuota.monthly;
 
-  const todayDate = getTodayDate();
-  const tomorrowDate = new Date(todayDate.getTime() + 24 * 60 * 60 * 1000);
+  const todayStr = getTodayStr();
+  const tomorrowStr = getTomorrowStr();
 
   const todayRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
@@ -245,21 +243,21 @@ export async function getUsageSummary(userId: number) {
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
-        sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
+        sql`${apiUsageLogs.usageDate} >= ${todayStr}`,
+        sql`${apiUsageLogs.usageDate} < ${tomorrowStr}`
       )
     );
 
-  const monthStart = getMonthStartDate();
-  const monthEnd = getNextMonthStartDate();
+  const monthStr = getMonthStr();
+  const nextMonthStr = getNextMonthStr();
   const monthRows = await db
     .select({ total: sql<number>`COALESCE(SUM(dailyCount), 0)` })
     .from(apiUsageLogs)
     .where(
       and(
         eq(apiUsageLogs.userId, userId),
-        sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
-        sql`${apiUsageLogs.usageDate} < ${monthEnd}`
+        sql`${apiUsageLogs.usageDate} >= ${monthStr}`,
+        sql`${apiUsageLogs.usageDate} < ${nextMonthStr}`
       )
     );
 

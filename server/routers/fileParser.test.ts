@@ -60,9 +60,9 @@ describe("fileParser.parse", () => {
     ).rejects.toThrow("仅管理员可上传文件");
   });
 
-  it("文件大小超过20MB应返回错误", async () => {
+  it("文件大小超过30MB应返回错误", async () => {
     const caller = appRouter.createCaller(makeAdminCtx());
-    const oversizeBytes = 21 * 1024 * 1024; // 21MB
+    const oversizeBytes = 31 * 1024 * 1024; // 31MB
     await expect(
       caller.fileParser.parse({
         filename: "big.pdf",
@@ -70,7 +70,7 @@ describe("fileParser.parse", () => {
         data: Buffer.from("x").toString("base64"),
         size: oversizeBytes,
       })
-    ).rejects.toThrow("文件大小不能超过20MB");
+    ).rejects.toThrow("文件大小不能超过30MB");
   });
 
   it("不支持的文件格式应返回错误", async () => {

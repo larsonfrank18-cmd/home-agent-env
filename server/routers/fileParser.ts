@@ -16,7 +16,7 @@ import { nanoid } from "nanoid";
 function detectFileType(
   filename: string,
   mimeType: string
-): "pdf" | "word" | "excel" | "csv" | "image" | "text" | "unknown" {
+): "pdf" | "word" | "excel" | "csv" | "ppt" | "image" | "text" | "unknown" {
   const ext = filename.toLowerCase().split(".").pop() || "";
   const mime = mimeType.toLowerCase();
 
@@ -25,6 +25,7 @@ function detectFileType(
   if (ext === "docx" || ext === "doc") return "word";
   if (ext === "xlsx" || ext === "xls") return "excel";
   if (ext === "csv") return "csv";
+  if (ext === "ppt" || ext === "pptx") return "ppt";
   if (["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext)) return "image";
   if (ext === "txt" || ext === "md") return "text";
 
@@ -41,6 +42,11 @@ function detectFileType(
   )
     return "excel";
   if (mime === "text/csv") return "csv";
+  if (
+    mime === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+    mime === "application/vnd.ms-powerpoint"
+  )
+    return "ppt";
   if (mime.startsWith("image/")) return "image";
   if (mime === "text/plain" || mime === "text/markdown") return "text";
 
@@ -103,6 +109,42 @@ async function parseExcel(buffer: Buffer): Promise<string> {
 
 function parseCsv(buffer: Buffer): string {
   return buffer.toString("utf-8").trim();
+}
+
+// ─── PowerPoint 解析 ──────────────────────────────────────────────
+
+async function parsePowerPoint(buffer: Buffer): Promise<string> {
+  try {
+    // 使用 adm-zip 提取 PPTX 文件内容
+    const AdmZip = await import("adm-zip");
+    const zip = new (AdmZip as any).default(buffer);
+    const entries = zip.getEntries();
+
+    const lines: string[] = [];
+    let slideNum = 0;
+
+    for (const entry of entries) {
+      if (entry.entryName.includes("slide") && entry.entryName.endsWith(".xml") && !entry.entryName.includes("slideLayout")) {
+        slideNum++;
+        lines.push(`=== 幻灯片 ${slideNum} ===`);
+        const content = entry.getData().toString("utf-8");
+        // 从 XML 中提取文本
+        const textMatches = content.match(/<a:t>([^<]+)<\/a:t>/g) || [];
+        for (const match of textMatches) {
+          const text = match.replace(/<a:t>|<\/a:t>/g, "");
+          if (text.trim()) {
+            lines.push(text);
+          }
+        }
+        lines.push("");
+      }
+    }
+
+    return lines.join("\n").trim() || "PowerPoint 文件内容为空";
+  } catch (e) {
+    console.error("[fileParser] PowerPoint parse error:", e);
+    throw new Error("PowerPoint 文件解析失败，请确认文件格式为 .pptx");
+  }
 }
 
 // ─── 图片 OCR（AI视觉识别） ────────────────────────────────────────
@@ -169,12 +211,12 @@ export const fileParserRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "仅管理员可上传文件" });
       }
 
-      // 文件大小限制：20MB
-      const MAX_SIZE = 20 * 1024 * 1024;
+      // 文件大小限制：30MB
+      const MAX_SIZE = 30 * 1024 * 1024;
       if (input.size > MAX_SIZE) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "文件大小不能超过20MB",
+          message: "文件大小不能超过30MB",
         });
       }
 
@@ -183,7 +225,7 @@ export const fileParserRouter = router({
       if (fileType === "unknown") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "不支持的文件格式，请上传 PDF、Word、Excel、CSV 或图片文件",
+          message: "不支持的文件格式，请上传 PDF、Word、Excel、CSV、PowerPoint 或图片文件",
         });
       }
 
@@ -204,6 +246,9 @@ export const fileParserRouter = router({
           break;
         case "csv":
           extractedText = parseCsv(buffer);
+          break;
+        case "ppt":
+          extractedText = await parsePowerPoint(buffer);
           break;
         case "image":
           extractedText = await parseImage(buffer, input.mimeType);

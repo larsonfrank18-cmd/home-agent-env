@@ -112,12 +112,14 @@ function UserCard({ user, onRefresh }: { user: UserRow; onRefresh: () => void })
         daysValid,
       });
 
-      // 2. 保存自定义配额（无论是否有值都更新，undefined 表示恢复默认）
-      await setQuotaMutation.mutateAsync({
-        userId: user.id,
-        dailyLimit: customDaily ? parseInt(customDaily) : undefined,
-        monthlyLimit: customMonthly ? parseInt(customMonthly) : undefined,
-      });
+      // 2. 仅当有修改配额时才提交
+      if (customDaily || customMonthly) {
+        await setQuotaMutation.mutateAsync({
+          userId: user.id,
+          dailyLimit: customDaily ? parseInt(customDaily) : undefined,
+          monthlyLimit: customMonthly ? parseInt(customMonthly) : undefined,
+        });
+      }
 
       toast.success("✅ 已保存");
       onRefresh();

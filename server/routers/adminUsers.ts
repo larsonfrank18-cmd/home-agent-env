@@ -250,8 +250,9 @@ export const adminUsersRouter = router({
       if (dailyLimit !== undefined) updateSet.customDailyLimit = dailyLimit;
       if (monthlyLimit !== undefined) updateSet.customMonthlyLimit = monthlyLimit;
 
+      // 如果没有提供任何配额，说明用户不想修改配额，直接返回成功
       if (Object.keys(updateSet).length === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "至少需要设置一个配额" });
+        return { success: true };
       }
 
       await db.update(users).set(updateSet).where(eq(users.id, userId));

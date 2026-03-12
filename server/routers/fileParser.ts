@@ -20,34 +20,29 @@ function detectFileType(
   const ext = filename.toLowerCase().split(".").pop() || "";
   const mime = mimeType.toLowerCase();
 
-  if (ext === "pdf" || mime === "application/pdf") return "pdf";
+  // 优先使用文件扩展名检测（更可靠）
+  if (ext === "pdf") return "pdf";
+  if (ext === "docx" || ext === "doc") return "word";
+  if (ext === "xlsx" || ext === "xls") return "excel";
+  if (ext === "csv") return "csv";
+  if (["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext)) return "image";
+  if (ext === "txt" || ext === "md") return "text";
+
+  // 如果扩展名不可用，则使用 MIME 类型
+  if (mime === "application/pdf") return "pdf";
   if (
-    ext === "docx" ||
-    ext === "doc" ||
     mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     mime === "application/msword"
   )
     return "word";
   if (
-    ext === "xlsx" ||
-    ext === "xls" ||
     mime === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
     mime === "application/vnd.ms-excel"
   )
     return "excel";
-  if (ext === "csv" || mime === "text/csv") return "csv";
-  if (
-    ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(ext) ||
-    mime.startsWith("image/")
-  )
-    return "image";
-  if (
-    ext === "txt" ||
-    ext === "md" ||
-    mime === "text/plain" ||
-    mime === "text/markdown"
-  )
-    return "text";
+  if (mime === "text/csv") return "csv";
+  if (mime.startsWith("image/")) return "image";
+  if (mime === "text/plain" || mime === "text/markdown") return "text";
 
   return "unknown";
 }

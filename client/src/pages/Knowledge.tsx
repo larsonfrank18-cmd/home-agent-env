@@ -82,9 +82,9 @@ function EntryForm({ initial, onClose, onSaved }: EntryFormProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const MAX_SIZE = 20 * 1024 * 1024;
+    const MAX_SIZE = 30 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      toast.error("文件大小不能超过 20MB");
+      toast.error("文件大小不能超过 30MB");
       return;
     }
 

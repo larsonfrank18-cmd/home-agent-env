@@ -11,7 +11,7 @@ import { invokeLLM } from "../_core/llm";
 import { storagePut } from "../storage";
 import { nanoid } from "nanoid";
 import { execSync } from "child_process";
-import { writeFileSync, readFileSync, unlinkSync } from "fs";
+import { writeFileSync, readFileSync, unlinkSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -120,24 +120,38 @@ function parseCsv(buffer: Buffer): string {
 async function convertPptToPptx(buffer: Buffer): Promise<Buffer> {
   const tempDir = tmpdir();
   const inputFile = join(tempDir, `ppt-${nanoid()}.ppt`);
-  const outputFile = join(tempDir, `ppt-${nanoid()}.pptx`);
+  // LibreOffice 会根据输入文件名生成输出文件名（替换扩展名）
+  const expectedOutputFile = inputFile.replace(/\.ppt$/, '.pptx');
 
   try {
     // 写入临时 .ppt 文件
     writeFileSync(inputFile, buffer);
 
     // 使用 LibreOffice 进行转换
-    execSync(
-      `libreoffice --headless --convert-to pptx --outdir ${tempDir} ${inputFile}`,
-      { timeout: 30000 }
-    );
+    try {
+      execSync(
+        `libreoffice --headless --convert-to pptx --outdir ${tempDir} "${inputFile}"`,
+        { timeout: 30000, stdio: 'pipe' }
+      );
+    } catch (execError) {
+      console.error("[fileParser] LibreOffice execution error:", execError);
+    }
+
+    // 检查输出文件是否存在
+    if (!existsSync(expectedOutputFile)) {
+      throw new Error(`转换后的文件不存在: ${expectedOutputFile}`);
+    }
 
     // 读取转换后的 .pptx 文件
-    const outputBuffer = readFileSync(outputFile);
+    const outputBuffer = readFileSync(expectedOutputFile);
 
     // 清理临时文件
-    unlinkSync(inputFile);
-    unlinkSync(outputFile);
+    try {
+      unlinkSync(inputFile);
+    } catch {}
+    try {
+      unlinkSync(expectedOutputFile);
+    } catch {}
 
     return outputBuffer;
   } catch (e) {
@@ -146,7 +160,7 @@ async function convertPptToPptx(buffer: Buffer): Promise<Buffer> {
       unlinkSync(inputFile);
     } catch {}
     try {
-      unlinkSync(outputFile);
+      unlinkSync(expectedOutputFile);
     } catch {}
 
     console.error("[fileParser] PPT to PPTX conversion error:", e);

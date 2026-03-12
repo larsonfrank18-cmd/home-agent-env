@@ -1,0 +1,8 @@
+{
+  "query": "DESCRIBE api_usage_logs; SELECT * FROM api_usage_logs LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user hxeJVEzKMq6JhaS.6041d1e07da2 --database 5532bcoCsDCMsE8McGw6DK --execute DESCRIBE api_usage_logs; SELECT * FROM api_usage_logs LIMIT 5;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table '5532bcocsdcmse8mcgw6dk.api_usage_logs' doesn't exist"
+  ]
+}

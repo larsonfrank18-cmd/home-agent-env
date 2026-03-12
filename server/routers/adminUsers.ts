@@ -384,6 +384,10 @@ export const adminUsersRouter = router({
 
     const today = getTodayStr();
     const month = getMonthStr();
+    const todayDate = getTodayDate();
+    const tomorrowDate = getTomorrowDate();
+    const monthStart = getMonthStartDate();
+    const monthEnd = getNextMonthStartDate();
 
     const userRows = await db
       .select({
@@ -420,7 +424,8 @@ export const adminUsersRouter = router({
       .where(
         and(
           eq(apiUsageLogs.userId, ctx.user.id),
-          sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m-%d') = ${today}`
+          sql`${apiUsageLogs.usageDate} >= ${todayDate}`,
+          sql`${apiUsageLogs.usageDate} < ${tomorrowDate}`
         )
       );
 
@@ -430,7 +435,8 @@ export const adminUsersRouter = router({
       .where(
         and(
           eq(apiUsageLogs.userId, ctx.user.id),
-          sql`DATE_FORMAT(${apiUsageLogs.usageDate}, '%Y-%m') = ${month}`
+          sql`${apiUsageLogs.usageDate} >= ${monthStart}`,
+          sql`${apiUsageLogs.usageDate} < ${monthEnd}`
         )
       );
 

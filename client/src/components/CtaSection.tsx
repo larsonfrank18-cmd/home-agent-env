@@ -31,6 +31,14 @@ export default function CtaSection() {
     }
   };
 
+  const handleActivityPlanning = () => {
+    if (user) {
+      navigate("/activity-planning");
+    } else {
+      navigate("/login");
+    }
+  };
+
   return (
     <>
       {/* CTA 区域 */}
@@ -62,8 +70,8 @@ export default function CtaSection() {
             家居建材行业的流量红利正在爆发，现在入场，用AI工具抢占先机
           </p>
 
-          {/* 三个入口按鈕 */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          {/* 四个入口按钮 */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 flex-wrap">
             <button
               onClick={handleStart}
               className="neon-btn-primary px-8 py-3.5 rounded text-sm font-semibold tracking-wide inline-flex items-center gap-2"
@@ -91,6 +99,16 @@ export default function CtaSection() {
                 <path d="M6 20v-2a6 6 0 0112 0v2" />
               </svg>
               客户人格分析
+            </button>
+            <button
+              onClick={handleActivityPlanning}
+              className="neon-btn px-8 py-3.5 rounded text-sm font-semibold tracking-wide inline-flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              活动策划
             </button>
           </div>
         </div>

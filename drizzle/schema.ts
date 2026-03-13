@@ -165,3 +165,75 @@ export const trendData = mysqlTable("trend_data", {
 
 export type TrendData = typeof trendData.$inferSelect;
 export type InsertTrendData = typeof trendData.$inferInsert;
+
+/**
+ * 活动策划表
+ * 存储用户创建的活动策划方案
+ */
+export const activityPlans = mysqlTable("activity_plans", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** 活动名称 */
+  activityName: varchar("activityName", { length: 200 }).notNull(),
+  /** 活动类型：seasonal=季节性大促, factory_group=工厂团购会, ceo_signing=总裁签售会, special_theme=特殊主题活动, other=其他 */
+  activityType: mysqlEnum("activityType", ["seasonal", "factory_group", "ceo_signing", "special_theme", "other"])
+    .default("other")
+    .notNull(),
+  /** 活动开始时间 */
+  startTime: timestamp("startTime").notNull(),
+  /** 活动结束时间 */
+  endTime: timestamp("endTime").notNull(),
+  /** 活动地点 */
+  location: varchar("location", { length: 500 }).notNull(),
+  /** 目标客户群体（JSON数组：new_customer, old_customer, specific_community, renovation_owner, other） */
+  targetCustomers: text("targetCustomers").notNull(),
+  /** 活动主题 */
+  theme: varchar("theme", { length: 200 }),
+  /** 销售目标（万元） */
+  salesTarget: int("salesTarget"),
+  /** 期望订单数 */
+  expectedOrders: int("expectedOrders"),
+  /** 平均客单价（元） */
+  averageOrderValue: int("averageOrderValue"),
+  /** 期望到场人数 */
+  expectedVisitors: int("expectedVisitors"),
+  /** 期望转化率（%） */
+  expectedConversionRate: int("expectedConversionRate"),
+  /** 产品优惠（JSON对象） */
+  productDiscounts: text("productDiscounts"),
+  /** 现场优惠（JSON数组） */
+  onSiteDiscounts: text("onSiteDiscounts"),
+  /** 额外福利 */
+  additionalBenefits: text("additionalBenefits"),
+  /** 主要产品类别（JSON数组） */
+  productCategories: text("productCategories"),
+  /** 参加活动的产品描述 */
+  productDescription: text("productDescription"),
+  /** 产品组合/套餐 */
+  productPackages: text("productPackages"),
+  /** 邀约话术 */
+  invitationScript: text("invitationScript"),
+  /** 活动介绍话术 */
+  introductionScript: text("introductionScript"),
+  /** 成交话术 */
+  closingScript: text("closingScript"),
+  /** 前期准备工作 */
+  preparationTasks: text("preparationTasks"),
+  /** 执行时间节点（JSON对象） */
+  executionTimeline: text("executionTimeline"),
+  /** 负责人及分工 */
+  responsibilities: text("responsibilities"),
+  /** 生成的完整活动方案（JSON对象） */
+  generatedPlan: text("generatedPlan"),
+  /** 生成状态：pending=待生成, generating=生成中, completed=已完成, failed=生成失败 */
+  status: mysqlEnum("status", ["pending", "generating", "completed", "failed"])
+    .default("pending")
+    .notNull(),
+  /** 生成错误信息（如果有） */
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ActivityPlan = typeof activityPlans.$inferSelect;
+export type InsertActivityPlan = typeof activityPlans.$inferInsert;

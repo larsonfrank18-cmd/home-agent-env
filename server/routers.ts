@@ -10,6 +10,7 @@ import { fileParserRouter } from "./routers/fileParser";
 import { dmAssistantRouter } from "./routers/dmAssistant";
 import { discAnalyzerRouter } from "./routers/discAnalyzer";
 import { adminUsersRouter } from "./routers/adminUsers";
+import { activityPlanningRouter } from "./routers/activityPlanning";
 
 export const appRouter = router({
   system: systemRouter,
@@ -37,6 +38,8 @@ export const appRouter = router({
   discAnalyzer: discAnalyzerRouter,
   // 管理员用户管理
   adminUsers: adminUsersRouter,
+  // 活动策划生成
+  activityPlanning: activityPlanningRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -40,8 +40,8 @@ const FUNCTIONS: FunctionItem[] = [
     icon: "⬡",
   },
   {
-    title: "一键复制输出",
-    desc: "生成后直接复制，发布抖音/小红书/视频号",
+    title: "活动策划生成",
+    desc: "AI生成完整活动方案、优惠政策、营销话术",
     icon: "⬢",
   },
 ];
@@ -62,10 +62,18 @@ function FunctionCard({ item, delay }: { item: FunctionItem; delay: number }) {
     return () => observer.disconnect();
   }, []);
 
+  const handleClick = () => {
+    if (item.title === "活动策划生成") {
+      navigate("/activity-planning");
+    } else {
+      navigate("/generator");
+    }
+  };
+
   return (
     <div
       ref={ref}
-      onClick={() => navigate("/generator")}
+      onClick={handleClick}
       className="dashed-card rounded-lg p-5 block group cursor-pointer"
       style={{
         opacity: visible ? 1 : 0,

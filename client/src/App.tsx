@@ -12,6 +12,7 @@ import Knowledge from "./pages/Knowledge";
 import DMAssistant from "./pages/DMAssistant";
 import DiscAnalyzer from "./pages/DiscAnalyzer";
 import ForgotPassword from "./pages/ForgotPassword";
+import ActivityPlanning from "./pages/ActivityPlanning";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path={"/knowledge"} component={Knowledge} />
       <Route path={"/dm-assistant"} component={DMAssistant} />
       <Route path={"/disc-analyzer"} component={DiscAnalyzer} />
+      <Route path={"/activity-planning"} component={ActivityPlanning} />
       <Route path={"/forgot-password"} component={ForgotPassword} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

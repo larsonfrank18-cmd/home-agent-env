@@ -79,6 +79,7 @@ export default function ActivityPlanning() {
   const [selectedTargetCustomers, setSelectedTargetCustomers] = useState<string[]>([]);
   const [selectedProductCategories, setSelectedProductCategories] = useState<string[]>([]);
   const [selectedOnSiteDiscounts, setSelectedOnSiteDiscounts] = useState<string[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   const generatePlanMutation = trpc.activityPlanning.generatePlan.useMutation();
 
@@ -100,6 +101,9 @@ export default function ActivityPlanning() {
 
   const onSubmit = async (data: ActivityPlanFormData) => {
     setIsGenerating(true);
+    setErrorMessage("");
+    console.log("开始生成活动方案，表单数据:", data);
+    
     try {
       const result = await generatePlanMutation.mutateAsync({
         ...data,
@@ -108,10 +112,12 @@ export default function ActivityPlanning() {
         onSiteDiscounts: selectedOnSiteDiscounts,
       });
 
+      console.log("活动方案已生成:", result);
       setGeneratedPlan(result.plan.generatedPlan);
-      console.log("活动方案已生成");
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : "生成活动方案失败，请重试";
       console.error("生成活动方案失败:", error);
+      setErrorMessage(errorMsg);
     } finally {
       setIsGenerating(false);
     }
@@ -199,7 +205,7 @@ export default function ActivityPlanning() {
                       {TARGET_CUSTOMERS.map((customer) => (
                         <div key={customer.value} className="flex items-center">
                           <Checkbox
-                            id={customer.value}
+                            id={`customer-${customer.value}`}
                             checked={selectedTargetCustomers.includes(customer.value)}
                             onCheckedChange={(checked) => {
                               if (checked) {
@@ -209,12 +215,13 @@ export default function ActivityPlanning() {
                               }
                             }}
                           />
-                          <Label htmlFor={customer.value} className="ml-2 cursor-pointer">
+                          <Label htmlFor={`customer-${customer.value}`} className="ml-2 cursor-pointer">
                             {customer.label}
                           </Label>
                         </div>
                       ))}
                     </div>
+                    {errors.targetCustomers && <p className="text-sm text-red-500 mt-1">{errors.targetCustomers.message}</p>}
                   </div>
 
                   {/* 活动主题 */}
@@ -222,7 +229,7 @@ export default function ActivityPlanning() {
                     <Label htmlFor="theme">活动主题</Label>
                     <Input
                       id="theme"
-                      placeholder="如：家装节、秋季家装季"
+                      placeholder="如：年终感恩回馈"
                       {...register("theme")}
                       className="mt-1"
                     />
@@ -234,7 +241,7 @@ export default function ActivityPlanning() {
                     <Input
                       id="salesTarget"
                       type="number"
-                      placeholder="0"
+                      placeholder="如：50"
                       {...register("salesTarget", { valueAsNumber: true })}
                       className="mt-1"
                     />
@@ -246,7 +253,7 @@ export default function ActivityPlanning() {
                     <Input
                       id="expectedOrders"
                       type="number"
-                      placeholder="0"
+                      placeholder="如：20"
                       {...register("expectedOrders", { valueAsNumber: true })}
                       className="mt-1"
                     />
@@ -258,7 +265,7 @@ export default function ActivityPlanning() {
                     <Input
                       id="averageOrderValue"
                       type="number"
-                      placeholder="0"
+                      placeholder="如：25000"
                       {...register("averageOrderValue", { valueAsNumber: true })}
                       className="mt-1"
                     />
@@ -270,7 +277,7 @@ export default function ActivityPlanning() {
                     <Input
                       id="expectedVisitors"
                       type="number"
-                      placeholder="0"
+                      placeholder="如：100"
                       {...register("expectedVisitors", { valueAsNumber: true })}
                       className="mt-1"
                     />
@@ -282,7 +289,7 @@ export default function ActivityPlanning() {
                     <Input
                       id="expectedConversionRate"
                       type="number"
-                      placeholder="0"
+                      placeholder="如：20"
                       {...register("expectedConversionRate", { valueAsNumber: true })}
                       className="mt-1"
                     />
@@ -290,7 +297,7 @@ export default function ActivityPlanning() {
 
                   {/* 产品类别 */}
                   <div>
-                    <Label>主要产品类别</Label>
+                    <Label>产品类别</Label>
                     <div className="space-y-2 mt-2">
                       {PRODUCT_CATEGORIES.map((category) => (
                         <div key={category.value} className="flex items-center">
@@ -434,9 +441,23 @@ export default function ActivityPlanning() {
                     />
                   </div>
 
+                  {/* 错误提示 */}
+                  {errorMessage && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+                      {errorMessage}
+                    </div>
+                  )}
+
                   {/* 生成按钮 */}
                   <Button type="submit" className="w-full" disabled={isGenerating} size="lg">
-                    {isGenerating ? "生成中..." : "生成活动方案"}
+                    {isGenerating ? (
+                      <span className="flex items-center gap-2">
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        生成中...
+                      </span>
+                    ) : (
+                      "生成活动方案"
+                    )}
                   </Button>
                 </form>
               </CardContent>
@@ -449,34 +470,29 @@ export default function ActivityPlanning() {
               <Card>
                 <CardHeader>
                   <CardTitle>生成的活动方案</CardTitle>
-                  <CardDescription>完整的活动策划方案</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6 max-h-[80vh] overflow-y-auto">
+                <CardContent className="space-y-6">
                   {/* 活动概述 */}
                   {generatedPlan.activityOverview && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">活动概述</h3>
-                      <div className="bg-slate-50 p-4 rounded-lg space-y-2">
-                        <p>
-                          <strong>活动名称：</strong> {generatedPlan.activityOverview.name}
-                        </p>
-                        <p>
-                          <strong>活动类型：</strong> {generatedPlan.activityOverview.type}
-                        </p>
-                        <p>
-                          <strong>活动时间：</strong> {generatedPlan.activityOverview.time}
-                        </p>
-                        <p>
-                          <strong>活动地点：</strong> {generatedPlan.activityOverview.location}
-                        </p>
-                        <p>
-                          <strong>目标客户：</strong> {generatedPlan.activityOverview.targetCustomers}
-                        </p>
-                        {generatedPlan.activityOverview.theme && (
-                          <p>
-                            <strong>活动主题：</strong> {generatedPlan.activityOverview.theme}
-                          </p>
-                        )}
+                      <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded">
+                        <div>
+                          <p className="text-sm text-slate-600">活动名称</p>
+                          <p className="font-medium">{generatedPlan.activityOverview.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-600">活动类型</p>
+                          <p className="font-medium">{generatedPlan.activityOverview.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-600">活动时间</p>
+                          <p className="font-medium">{generatedPlan.activityOverview.time}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-slate-600">活动地点</p>
+                          <p className="font-medium">{generatedPlan.activityOverview.location}</p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -485,21 +501,15 @@ export default function ActivityPlanning() {
                   {generatedPlan.activityGoals && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">活动目标</h3>
-                      <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                      <div className="space-y-2 p-4 bg-slate-50 rounded">
                         {generatedPlan.activityGoals.salesTarget && (
-                          <p>
-                            <strong>销售目标：</strong> {generatedPlan.activityGoals.salesTarget}
-                          </p>
+                          <p><strong>销售目标：</strong> {generatedPlan.activityGoals.salesTarget}</p>
                         )}
                         {generatedPlan.activityGoals.visitorTarget && (
-                          <p>
-                            <strong>客流目标：</strong> {generatedPlan.activityGoals.visitorTarget}
-                          </p>
+                          <p><strong>客流目标：</strong> {generatedPlan.activityGoals.visitorTarget}</p>
                         )}
                         {generatedPlan.activityGoals.brandGoal && (
-                          <p>
-                            <strong>品牌目标：</strong> {generatedPlan.activityGoals.brandGoal}
-                          </p>
+                          <p><strong>品牌目标：</strong> {generatedPlan.activityGoals.brandGoal}</p>
                         )}
                       </div>
                     </div>
@@ -510,9 +520,9 @@ export default function ActivityPlanning() {
                     <div>
                       <h3 className="text-lg font-semibold mb-3">活动亮点</h3>
                       <ul className="space-y-2">
-                        {generatedPlan.activityHighlights.map((highlight: string, idx: number) => (
-                          <li key={idx} className="flex items-start gap-3">
-                            <span className="text-blue-600 font-bold">•</span>
+                        {generatedPlan.activityHighlights.map((highlight: string, index: number) => (
+                          <li key={index} className="flex gap-3 p-3 bg-blue-50 rounded">
+                            <span className="text-blue-600 font-semibold flex-shrink-0">✓</span>
                             <span>{highlight}</span>
                           </li>
                         ))}
@@ -524,29 +534,29 @@ export default function ActivityPlanning() {
                   {generatedPlan.detailedPlan && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">详细方案</h3>
-                      <div className="bg-slate-50 p-4 rounded-lg space-y-3">
+                      <div className="space-y-3 p-4 bg-slate-50 rounded">
                         {generatedPlan.detailedPlan.productDiscounts && (
                           <div>
-                            <strong>产品优惠：</strong>
-                            <p className="text-sm text-slate-700 mt-1">{generatedPlan.detailedPlan.productDiscounts}</p>
+                            <p className="font-medium text-slate-700">产品优惠</p>
+                            <p className="text-slate-600">{generatedPlan.detailedPlan.productDiscounts}</p>
                           </div>
                         )}
                         {generatedPlan.detailedPlan.onSiteDiscounts && (
                           <div>
-                            <strong>现场优惠：</strong>
-                            <p className="text-sm text-slate-700 mt-1">{generatedPlan.detailedPlan.onSiteDiscounts}</p>
+                            <p className="font-medium text-slate-700">现场优惠</p>
+                            <p className="text-slate-600">{generatedPlan.detailedPlan.onSiteDiscounts}</p>
                           </div>
                         )}
                         {generatedPlan.detailedPlan.additionalBenefits && (
                           <div>
-                            <strong>额外福利：</strong>
-                            <p className="text-sm text-slate-700 mt-1">{generatedPlan.detailedPlan.additionalBenefits}</p>
+                            <p className="font-medium text-slate-700">额外福利</p>
+                            <p className="text-slate-600">{generatedPlan.detailedPlan.additionalBenefits}</p>
                           </div>
                         )}
                         {generatedPlan.detailedPlan.productSelection && (
                           <div>
-                            <strong>产品选择：</strong>
-                            <p className="text-sm text-slate-700 mt-1">{generatedPlan.detailedPlan.productSelection}</p>
+                            <p className="font-medium text-slate-700">产品选择</p>
+                            <p className="text-slate-600">{generatedPlan.detailedPlan.productSelection}</p>
                           </div>
                         )}
                       </div>
@@ -559,21 +569,21 @@ export default function ActivityPlanning() {
                       <h3 className="text-lg font-semibold mb-3">营销话术</h3>
                       <div className="space-y-4">
                         {generatedPlan.marketingScripts.invitationScript && (
-                          <div className="bg-blue-50 p-4 rounded-lg">
-                            <strong className="text-blue-900">邀约话术：</strong>
-                            <Streamdown className="text-sm text-slate-700 mt-2">{generatedPlan.marketingScripts.invitationScript}</Streamdown>
+                          <div className="p-4 bg-green-50 rounded border border-green-200">
+                            <p className="font-medium text-green-900 mb-2">邀约话术</p>
+                            <Streamdown>{generatedPlan.marketingScripts.invitationScript}</Streamdown>
                           </div>
                         )}
                         {generatedPlan.marketingScripts.introductionScript && (
-                          <div className="bg-green-50 p-4 rounded-lg">
-                            <strong className="text-green-900">活动介绍话术：</strong>
-                            <Streamdown className="text-sm text-slate-700 mt-2">{generatedPlan.marketingScripts.introductionScript}</Streamdown>
+                          <div className="p-4 bg-blue-50 rounded border border-blue-200">
+                            <p className="font-medium text-blue-900 mb-2">活动介绍话术</p>
+                            <Streamdown>{generatedPlan.marketingScripts.introductionScript}</Streamdown>
                           </div>
                         )}
                         {generatedPlan.marketingScripts.closingScript && (
-                          <div className="bg-purple-50 p-4 rounded-lg">
-                            <strong className="text-purple-900">成交话术：</strong>
-                            <Streamdown className="text-sm text-slate-700 mt-2">{generatedPlan.marketingScripts.closingScript}</Streamdown>
+                          <div className="p-4 bg-purple-50 rounded border border-purple-200">
+                            <p className="font-medium text-purple-900 mb-2">成交话术</p>
+                            <Streamdown>{generatedPlan.marketingScripts.closingScript}</Streamdown>
                           </div>
                         )}
                       </div>
@@ -584,23 +594,23 @@ export default function ActivityPlanning() {
                   {generatedPlan.executionPlan && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">执行计划</h3>
-                      <div className="bg-slate-50 p-4 rounded-lg space-y-3">
+                      <div className="space-y-3 p-4 bg-slate-50 rounded">
                         {generatedPlan.executionPlan.preparation && (
                           <div>
-                            <strong>前期准备：</strong>
-                            <Streamdown className="text-sm text-slate-700 mt-1">{generatedPlan.executionPlan.preparation}</Streamdown>
+                            <p className="font-medium text-slate-700">前期准备</p>
+                            <Streamdown>{generatedPlan.executionPlan.preparation}</Streamdown>
                           </div>
                         )}
                         {generatedPlan.executionPlan.timeline && (
                           <div>
-                            <strong>执行时间节点：</strong>
-                            <Streamdown className="text-sm text-slate-700 mt-1">{generatedPlan.executionPlan.timeline}</Streamdown>
+                            <p className="font-medium text-slate-700">执行时间节点</p>
+                            <Streamdown>{generatedPlan.executionPlan.timeline}</Streamdown>
                           </div>
                         )}
                         {generatedPlan.executionPlan.responsibilities && (
                           <div>
-                            <strong>人员分工：</strong>
-                            <Streamdown className="text-sm text-slate-700 mt-1">{generatedPlan.executionPlan.responsibilities}</Streamdown>
+                            <p className="font-medium text-slate-700">负责人分工</p>
+                            <Streamdown>{generatedPlan.executionPlan.responsibilities}</Streamdown>
                           </div>
                         )}
                       </div>
@@ -611,42 +621,44 @@ export default function ActivityPlanning() {
                   {generatedPlan.expectedResults && (
                     <div>
                       <h3 className="text-lg font-semibold mb-3">预期效果</h3>
-                      <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                      <div className="space-y-2 p-4 bg-orange-50 rounded">
                         {generatedPlan.expectedResults.salesForecast && (
-                          <p>
-                            <strong>销售预测：</strong> {generatedPlan.expectedResults.salesForecast}
-                          </p>
+                          <p><strong>销售预测：</strong> {generatedPlan.expectedResults.salesForecast}</p>
                         )}
                         {generatedPlan.expectedResults.visitorForecast && (
-                          <p>
-                            <strong>客流预测：</strong> {generatedPlan.expectedResults.visitorForecast}
-                          </p>
+                          <p><strong>客流预测：</strong> {generatedPlan.expectedResults.visitorForecast}</p>
                         )}
                         {generatedPlan.expectedResults.conversionForecast && (
-                          <p>
-                            <strong>成交率预测：</strong> {generatedPlan.expectedResults.conversionForecast}
-                          </p>
+                          <p><strong>转化预测：</strong> {generatedPlan.expectedResults.conversionForecast}</p>
                         )}
                       </div>
                     </div>
                   )}
 
-                  {/* 方案总结 */}
+                  {/* 总结 */}
                   {generatedPlan.summary && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">方案总结</h3>
-                      <div className="bg-amber-50 p-4 rounded-lg">
-                        <Streamdown className="text-sm text-slate-700">{generatedPlan.summary}</Streamdown>
-                      </div>
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded border border-blue-200">
+                      <h3 className="font-semibold mb-2">方案总结</h3>
+                      <Streamdown>{generatedPlan.summary}</Streamdown>
                     </div>
                   )}
+
+                  {/* 重新生成按钮 */}
+                  <Button
+                    onClick={() => setGeneratedPlan(null)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    返回编辑
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
-              <Card className="h-full flex items-center justify-center">
+              <Card className="h-full flex items-center justify-center min-h-96">
                 <CardContent className="text-center">
+                  <div className="text-6xl mb-4">📋</div>
                   <p className="text-slate-500 text-lg">填写表单并点击"生成活动方案"按钮</p>
-                  <p className="text-slate-400 text-sm mt-2">系统将为您生成完整的活动策划方案</p>
+                  <p className="text-slate-400 text-sm mt-2">AI将为您生成完整的活动策划方案</p>
                 </CardContent>
               </Card>
             )}

@@ -100,13 +100,10 @@ export default function ActivityPlanning() {
     },
   });
 
-  // 导出方案为PDF
-  const exportPlanToPDF = async () => {
-    if (!generatedPlan) return;
-
-    try {
-      // 构建HTML内容
-      const htmlContent = `
+  // 构建导出HTML内容
+  const buildExportHTML = () => {
+    if (!generatedPlan) return "";
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -297,30 +294,89 @@ export default function ActivityPlanning() {
   </div>
 </body>
 </html>
-      `;
+    `;
+  };
 
-      // 使用浏览器API下载PDF
+  // 导出为PDF
+  const exportPlanToPDF = async () => {
+    if (!generatedPlan) return;
+
+    try {
+      const htmlContent = buildExportHTML();
+      // 创建一个新窗口用于打印
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("无法打开打印窗口，请检查浏览器设置");
+        return;
+      }
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // 延迟打印，确保内容加载完成
+      setTimeout(() => {
+        printWindow.print();
+        // 打印后关闭窗口
+        printWindow.onafterprint = () => {
+          printWindow.close();
+        };
+      }, 250);
+    } catch (error) {
+      console.error("导出PDF失败:", error);
+      alert("导出PDF失败，请重试");
+    }
+  };
+
+  // 导出为Word
+  const exportPlanToWord = async () => {
+    if (!generatedPlan) return;
+
+    try {
+      const htmlContent = buildExportHTML();
+      const fileName = `${generatedPlan.activityOverview?.name || "活动方案"}-${new Date().getTime()}.doc`;
+      
+      // Word格式需要特殊的MIME类型
+      const wordContent = `
+        <html xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            * { margin: 0; padding: 0; }
+            body { font-family: '宋体', 'SimSun', sans-serif; line-height: 1.8; color: #333; }
+            .container { max-width: 900px; margin: 0 auto; padding: 40px; }
+            h1 { color: #ff9500; font-size: 32px; margin-bottom: 30px; border-bottom: 4px solid #ff9500; padding-bottom: 15px; text-align: center; }
+            h2 { color: #ff9500; font-size: 20px; margin-top: 30px; margin-bottom: 15px; border-left: 4px solid #ff9500; padding-left: 10px; }
+            .section { margin-bottom: 30px; page-break-inside: avoid; }
+            .info-grid { display: table; width: 100%; margin-bottom: 15px; }
+            .info-item { display: table-cell; background: #fff3e0; padding: 15px; border-left: 4px solid #ff9500; border-radius: 4px; width: 50%; }
+            .info-label { font-weight: bold; color: #ff9500; font-size: 13px; }
+            .info-value { color: #333; margin-top: 8px; font-size: 14px; }
+            ul, ol { margin-left: 20px; }
+            li { margin-bottom: 10px; color: #333; }
+            p { margin-bottom: 10px; color: #333; line-height: 1.8; }
+            strong { color: #ff9500; }
+            .highlight { background: #fff3e0; padding: 20px; border-radius: 4px; margin-bottom: 15px; border-left: 4px solid #ff9500; }
+            .footer { margin-top: 50px; text-align: center; color: #999; font-size: 12px; border-top: 1px solid #ddd; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          ${htmlContent}
+        </body>
+        </html>
+      `;
+      
       const element = document.createElement("a");
-      element.setAttribute(
-        "href",
-        "data:text/html;charset=utf-8," + encodeURIComponent(htmlContent)
-      );
-      element.setAttribute(
-        "download",
-        `${generatedPlan.activityOverview?.name || "活动方案"}-${new Date().getTime()}.html`
-      );
+      const blob = new Blob([wordContent], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      element.setAttribute("href", url);
+      element.setAttribute("download", fileName);
       element.style.display = "none";
       document.body.appendChild(element);
       element.click();
       document.body.removeChild(element);
-
-      // 提示用户可以在浏览器中打印为PDF
-      alert(
-        "方案已导出为HTML文件。您可以：\n1. 在浏览器中按 Ctrl+P (或 Cmd+P) 打印\n2. 选择 '另存为PDF' 保存为PDF文件"
-      );
+      URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("导出失败:", error);
-      alert("导出失败，请重试");
+      console.error("导出Word失败:", error);
+      alert("导出Word失败，请重试");
     }
   };
 
@@ -785,7 +841,7 @@ export default function ActivityPlanning() {
           <div className="lg:col-span-2">
             {generatedPlan ? (
               <div className="space-y-4">
-                {/* 操作按钮 */}
+                   {/* 操作按钮 */}
                 <div className="flex gap-3">
                   <Button
                     onClick={exportPlanToPDF}
@@ -799,18 +855,46 @@ export default function ActivityPlanning() {
                       stroke="currentColor"
                       strokeWidth="2"
                     >
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                       <polyline points="7 10 12 15 17 10" />
                       <line x1="12" y1="15" x2="12" y2="3" />
                     </svg>
-                    导出方案
+                    📄 PDF
+                  </Button>
+                  <Button
+                    onClick={exportPlanToWord}
+                    className="flex-1 bg-[oklch(0.75_0.18_55)] hover:bg-[oklch(0.70_0.18_55)] text-[oklch(0.09_0.01_30)]"
+                    size="lg"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    📝 Word
                   </Button>
                   <Button
                     onClick={() => setGeneratedPlan(null)}
                     variant="outline"
+                    className="flex-1"
                     size="lg"
                   >
-                    返回编辑
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                    ← 返回编辑
                   </Button>
                 </div>
 

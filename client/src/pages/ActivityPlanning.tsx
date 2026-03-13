@@ -19,7 +19,7 @@ const activityPlanFormSchema = z.object({
   startTime: z.date(),
   endTime: z.date(),
   location: z.string().min(1, "活动地点不能为空"),
-  targetCustomers: z.array(z.string()).min(1, "至少选择一个目标客户群体"),
+  targetCustomers: z.array(z.string()).optional(),
   theme: z.string().optional(),
   salesTarget: z.number().optional(),
   expectedOrders: z.number().optional(),
@@ -91,6 +91,7 @@ export default function ActivityPlanning() {
     setValue,
   } = useForm<ActivityPlanFormData>({
     resolver: zodResolver(activityPlanFormSchema),
+    mode: "onBlur",
     defaultValues: {
       activityType: "seasonal",
       targetCustomers: [],
@@ -100,6 +101,13 @@ export default function ActivityPlanning() {
   });
 
   const onSubmit = async (data: ActivityPlanFormData) => {
+    // 验证必选字段
+    if (selectedTargetCustomers.length === 0) {
+      setErrorMessage("请至少选择一个目标客户群体");
+      setIsGenerating(false);
+      return;
+    }
+
     setIsGenerating(true);
     setErrorMessage("");
     console.log("开始生成活动方案，表单数据:", data);
@@ -221,7 +229,7 @@ export default function ActivityPlanning() {
                         </div>
                       ))}
                     </div>
-                    {errors.targetCustomers && <p className="text-sm text-red-500 mt-1">{errors.targetCustomers.message}</p>}
+                    {selectedTargetCustomers.length === 0 && <p className="text-sm text-red-500 mt-1">至少选择一个目标客户群体</p>}
                   </div>
 
                   {/* 活动主题 */}

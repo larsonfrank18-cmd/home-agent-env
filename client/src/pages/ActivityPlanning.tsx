@@ -357,13 +357,13 @@ export default function ActivityPlanning() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-background text-foreground p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
+          <h1 className="text-4xl font-bold text-[oklch(0.75_0.18_55)] mb-2">
             活动策划生成器
           </h1>
-          <p className="text-lg text-slate-600">
+          <p className="text-lg text-[oklch(0.58_0.04_50)]">
             填写活动信息，AI将为您生成完整的活动方案，包括优惠政策、营销话术和执行计划
           </p>
         </div>
@@ -371,7 +371,7 @@ export default function ActivityPlanning() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 表单区域 */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-6">
+            <Card className="sticky top-6 bg-card border-[oklch(0.75_0.18_55/20%)]">
               <CardHeader>
                 <CardTitle>活动信息</CardTitle>
                 <CardDescription>填写活动基本信息</CardDescription>
@@ -789,7 +789,7 @@ export default function ActivityPlanning() {
                 <div className="flex gap-3">
                   <Button
                     onClick={exportPlanToPDF}
-                    className="flex-1 bg-[oklch(0.75_0.18_55)] hover:bg-[oklch(0.70_0.18_55)] text-white"
+                    className="flex-1 bg-[oklch(0.75_0.18_55)] hover:bg-[oklch(0.70_0.18_55)] text-[oklch(0.09_0.01_30)]"
                     size="lg"
                   >
                     <svg
@@ -815,9 +815,9 @@ export default function ActivityPlanning() {
                 </div>
 
                 {/* 方案内容卡片 */}
-                <Card className="bg-gradient-to-br from-[oklch(0.98_0.01_55)] to-white border-[oklch(0.75_0.18_55/20%)]">
-                  <CardHeader className="bg-gradient-to-r from-[oklch(0.75_0.18_55/5%)] to-transparent border-b border-[oklch(0.75_0.18_55/10%)]">
-                    <CardTitle className="text-[oklch(0.75_0.18_55)]">
+                <Card className="bg-card border-[oklch(0.75_0.18_55/30%)]">
+                  <CardHeader className="bg-[oklch(0.12_0.015_30)] border-b border-[oklch(0.75_0.18_55/20%)]">
+                    <CardTitle className="text-[oklch(0.75_0.18_55)] text-2xl">
                       📋 {generatedPlan.activityOverview?.name || "活动方案"}
                     </CardTitle>
                   </CardHeader>
@@ -829,35 +829,35 @@ export default function ActivityPlanning() {
                           活动概述
                         </h3>
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="p-4 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
-                            <p className="text-sm text-slate-600 font-medium">
+                          <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                            <p className="text-sm text-[oklch(0.58_0.04_50)] font-medium">
                               活动名称
                             </p>
-                            <p className="text-slate-900 mt-1">
+                            <p className="text-foreground mt-1">
                               {generatedPlan.activityOverview.name}
                             </p>
                           </div>
-                          <div className="p-4 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
-                            <p className="text-sm text-slate-600 font-medium">
+                          <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                            <p className="text-sm text-[oklch(0.58_0.04_50)] font-medium">
                               活动类型
                             </p>
-                            <p className="text-slate-900 mt-1">
+                            <p className="text-foreground mt-1">
                               {generatedPlan.activityOverview.type}
                             </p>
                           </div>
-                          <div className="p-4 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
-                            <p className="text-sm text-slate-600 font-medium">
+                          <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                            <p className="text-sm text-[oklch(0.58_0.04_50)] font-medium">
                               活动时间
                             </p>
-                            <p className="text-slate-900 mt-1">
+                            <p className="text-foreground mt-1">
                               {generatedPlan.activityOverview.time}
                             </p>
                           </div>
-                          <div className="p-4 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
-                            <p className="text-sm text-slate-600 font-medium">
+                          <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                            <p className="text-sm text-[oklch(0.58_0.04_50)] font-medium">
                               活动地点
                             </p>
-                            <p className="text-slate-900 mt-1">
+                            <p className="text-foreground mt-1">
                               {generatedPlan.activityOverview.location}
                             </p>
                           </div>
@@ -871,9 +871,9 @@ export default function ActivityPlanning() {
                         <h3 className="text-lg font-semibold mb-3 text-[oklch(0.75_0.18_55)] border-b-2 border-[oklch(0.75_0.18_55/20%)] pb-2">
                           活动目标
                         </h3>
-                        <div className="space-y-3 p-4 bg-[oklch(0.98_0.01_55)] rounded-lg">
+                        <div className="space-y-3 p-4 bg-[oklch(0.12_0.015_30)] rounded-lg">
                           {generatedPlan.activityGoals.salesTarget && (
-                            <p className="text-slate-900">
+                            <p className="text-foreground">
                               <strong className="text-[oklch(0.75_0.18_55)]">
                                 销售目标：
                               </strong>{" "}
@@ -881,7 +881,7 @@ export default function ActivityPlanning() {
                             </p>
                           )}
                           {generatedPlan.activityGoals.visitorTarget && (
-                            <p className="text-slate-900">
+                            <p className="text-foreground">
                               <strong className="text-[oklch(0.75_0.18_55)]">
                                 客流目标：
                               </strong>{" "}
@@ -889,7 +889,7 @@ export default function ActivityPlanning() {
                             </p>
                           )}
                           {generatedPlan.activityGoals.brandGoal && (
-                            <p className="text-slate-900">
+                            <p className="text-foreground">
                               <strong className="text-[oklch(0.75_0.18_55)]">
                                 品牌目标：
                               </strong>{" "}
@@ -912,12 +912,12 @@ export default function ActivityPlanning() {
                               (highlight: string, index: number) => (
                                 <li
                                   key={index}
-                                  className="flex gap-3 p-3 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]"
+                                  className="flex gap-3 p-3 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]"
                                 >
                                   <span className="text-[oklch(0.75_0.18_55)] font-bold flex-shrink-0">
                                     ✓
                                   </span>
-                                  <span className="text-slate-900">
+                                  <span className="text-foreground">
                                     {highlight}
                                   </span>
                                 </li>
@@ -933,13 +933,13 @@ export default function ActivityPlanning() {
                         <h3 className="text-lg font-semibold mb-3 text-[oklch(0.75_0.18_55)] border-b-2 border-[oklch(0.75_0.18_55/20%)] pb-2">
                           详细方案
                         </h3>
-                        <div className="space-y-3 p-4 bg-[oklch(0.98_0.01_55)] rounded-lg">
+                        <div className="space-y-3 p-4 bg-[oklch(0.12_0.015_30)] rounded-lg">
                           {generatedPlan.detailedPlan.productDiscounts && (
                             <div>
                               <p className="font-medium text-[oklch(0.75_0.18_55)]">
                                 产品优惠
                               </p>
-                              <p className="text-slate-900 mt-1">
+                              <p className="text-foreground mt-1">
                                 {generatedPlan.detailedPlan.productDiscounts}
                               </p>
                             </div>
@@ -949,7 +949,7 @@ export default function ActivityPlanning() {
                               <p className="font-medium text-[oklch(0.75_0.18_55)]">
                                 现场优惠
                               </p>
-                              <p className="text-slate-900 mt-1">
+                              <p className="text-foreground mt-1">
                                 {generatedPlan.detailedPlan.onSiteDiscounts}
                               </p>
                             </div>
@@ -959,7 +959,7 @@ export default function ActivityPlanning() {
                               <p className="font-medium text-[oklch(0.75_0.18_55)]">
                                 额外福利
                               </p>
-                              <p className="text-slate-900 mt-1">
+                              <p className="text-foreground mt-1">
                                 {generatedPlan.detailedPlan.additionalBenefits}
                               </p>
                             </div>
@@ -969,7 +969,7 @@ export default function ActivityPlanning() {
                               <p className="font-medium text-[oklch(0.75_0.18_55)]">
                                 产品选择
                               </p>
-                              <p className="text-slate-900 mt-1">
+                              <p className="text-foreground mt-1">
                                 {generatedPlan.detailedPlan.productSelection}
                               </p>
                             </div>
@@ -986,11 +986,11 @@ export default function ActivityPlanning() {
                         </h3>
                         <div className="space-y-4">
                           {generatedPlan.marketingScripts.invitationScript && (
-                            <div className="p-4 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                            <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
                               <p className="font-medium text-[oklch(0.75_0.18_55)] mb-2">
                                 邀约话术
                               </p>
-                              <Streamdown className="text-slate-900">
+                              <Streamdown className="text-foreground">
                                 {
                                   generatedPlan.marketingScripts
                                     .invitationScript
@@ -1000,11 +1000,11 @@ export default function ActivityPlanning() {
                           )}
                           {generatedPlan.marketingScripts
                             .introductionScript && (
-                            <div className="p-4 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                            <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
                               <p className="font-medium text-[oklch(0.75_0.18_55)] mb-2">
                                 活动介绍话术
                               </p>
-                              <Streamdown className="text-slate-900">
+                              <Streamdown className="text-foreground">
                                 {
                                   generatedPlan.marketingScripts
                                     .introductionScript
@@ -1013,11 +1013,11 @@ export default function ActivityPlanning() {
                             </div>
                           )}
                           {generatedPlan.marketingScripts.closingScript && (
-                            <div className="p-4 bg-[oklch(0.98_0.01_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                            <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
                               <p className="font-medium text-[oklch(0.75_0.18_55)] mb-2">
                                 成交话术
                               </p>
-                              <Streamdown className="text-slate-900">
+                              <Streamdown className="text-foreground">
                                 {generatedPlan.marketingScripts.closingScript}
                               </Streamdown>
                             </div>
@@ -1032,13 +1032,13 @@ export default function ActivityPlanning() {
                         <h3 className="text-lg font-semibold mb-3 text-[oklch(0.75_0.18_55)] border-b-2 border-[oklch(0.75_0.18_55/20%)] pb-2">
                           执行计划
                         </h3>
-                        <div className="space-y-3 p-4 bg-[oklch(0.98_0.01_55)] rounded-lg">
+                        <div className="space-y-3 p-4 bg-[oklch(0.12_0.015_30)] rounded-lg">
                           {generatedPlan.executionPlan.preparation && (
                             <div>
                               <p className="font-medium text-[oklch(0.75_0.18_55)]">
                                 前期准备
                               </p>
-                              <Streamdown className="text-slate-900 mt-1">
+                              <Streamdown className="text-foreground mt-1">
                                 {generatedPlan.executionPlan.preparation}
                               </Streamdown>
                             </div>
@@ -1048,7 +1048,7 @@ export default function ActivityPlanning() {
                               <p className="font-medium text-[oklch(0.75_0.18_55)]">
                                 执行时间节点
                               </p>
-                              <Streamdown className="text-slate-900 mt-1">
+                              <Streamdown className="text-foreground mt-1">
                                 {generatedPlan.executionPlan.timeline}
                               </Streamdown>
                             </div>
@@ -1058,7 +1058,7 @@ export default function ActivityPlanning() {
                               <p className="font-medium text-[oklch(0.75_0.18_55)]">
                                 负责人分工
                               </p>
-                              <Streamdown className="text-slate-900 mt-1">
+                              <Streamdown className="text-foreground mt-1">
                                 {generatedPlan.executionPlan.responsibilities}
                               </Streamdown>
                             </div>
@@ -1073,9 +1073,9 @@ export default function ActivityPlanning() {
                         <h3 className="text-lg font-semibold mb-3 text-[oklch(0.75_0.18_55)] border-b-2 border-[oklch(0.75_0.18_55/20%)] pb-2">
                           预期效果
                         </h3>
-                        <div className="space-y-2 p-4 bg-[oklch(0.98_0.01_55)] rounded-lg">
+                        <div className="space-y-2 p-4 bg-[oklch(0.12_0.015_30)] rounded-lg">
                           {generatedPlan.expectedResults.salesForecast && (
-                            <p className="text-slate-900">
+                            <p className="text-foreground">
                               <strong className="text-[oklch(0.75_0.18_55)]">
                                 销售预测：
                               </strong>{" "}
@@ -1083,7 +1083,7 @@ export default function ActivityPlanning() {
                             </p>
                           )}
                           {generatedPlan.expectedResults.visitorForecast && (
-                            <p className="text-slate-900">
+                            <p className="text-foreground">
                               <strong className="text-[oklch(0.75_0.18_55)]">
                                 客流预测：
                               </strong>{" "}
@@ -1091,7 +1091,7 @@ export default function ActivityPlanning() {
                             </p>
                           )}
                           {generatedPlan.expectedResults.conversionForecast && (
-                            <p className="text-slate-900">
+                            <p className="text-foreground">
                               <strong className="text-[oklch(0.75_0.18_55)]">
                                 转化预测：
                               </strong>{" "}
@@ -1104,11 +1104,11 @@ export default function ActivityPlanning() {
 
                     {/* 总结 */}
                     {generatedPlan.summary && (
-                      <div className="p-4 bg-gradient-to-r from-[oklch(0.98_0.01_55)] to-[oklch(0.97_0.02_55)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
+                      <div className="p-4 bg-[oklch(0.12_0.015_30)] rounded-lg border-l-4 border-[oklch(0.75_0.18_55)]">
                         <h3 className="font-semibold text-[oklch(0.75_0.18_55)] mb-2">
                           方案总结
                         </h3>
-                        <Streamdown className="text-slate-900">
+                        <Streamdown className="text-foreground">
                           {generatedPlan.summary}
                         </Streamdown>
                       </div>
@@ -1117,13 +1117,13 @@ export default function ActivityPlanning() {
                 </Card>
               </div>
             ) : (
-              <Card className="h-full flex items-center justify-center min-h-96 bg-gradient-to-br from-[oklch(0.98_0.01_55)] to-white">
+              <Card className="h-full flex items-center justify-center min-h-96 bg-card">
                 <CardContent className="text-center">
                   <div className="text-6xl mb-4">📋</div>
-                  <p className="text-slate-600 text-lg font-medium">
+                  <p className="text-[oklch(0.75_0.18_55)] text-lg font-medium">
                     填写表单并点击"生成活动方案"按钮
                   </p>
-                  <p className="text-slate-500 text-sm mt-2">
+                  <p className="text-[oklch(0.58_0.04_50)] text-sm mt-2">
                     AI将为您生成完整的活动策划方案
                   </p>
                 </CardContent>

@@ -11,9 +11,9 @@ export default defineConfig({
   dialect: "mysql",
   dbCredentials: {
     url: connectionString,
-    // 指向我们自己提供的 CA 证书
+    // 在本地 Windows 环境下，必须使用绝对路径指向 CA 证书
     ssl: {
-      ca: "./certs/isrg-root-x1.pem",
+      ca: "C:/Users/jylib/Documents/trae_projects/trae/project_code/certs/isrg-root-x1.pem",
     },
   },
 });

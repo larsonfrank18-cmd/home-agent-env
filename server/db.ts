@@ -1,5 +1,8 @@
 import { eq, or, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import fs from "fs";
+import path from "path";
 import { InsertUser, User, users, generationHistory, GenerationHistory, InsertGenerationHistory, trendData, TrendData, InsertTrendData } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -8,7 +11,17 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // 运行时数据库连接配置
+      // 创建一个 mysql2 连接池，并明确指定 SSL 证书
+      const pool = mysql.createPool({
+        uri: process.env.DATABASE_URL,
+        ssl: {
+          // Vercel 构建环境中，__dirname 指向当前文件所在目录
+          // 我们需要找到项目根目录下的 certs/isrg-root-x1.pem
+          ca: fs.readFileSync(path.resolve(process.cwd(), "certs/isrg-root-x1.pem")),
+        },
+      });
+      _db = drizzle(pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;

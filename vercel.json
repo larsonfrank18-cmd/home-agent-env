@@ -1,5 +1,8 @@
 {
   "version": 2,
+  "env": {
+    "ENABLE_EXPERIMENTAL_COREPACK": "1"
+  },
   "builds": [
     {
       "src": "package.json",

@@ -71,25 +71,6 @@ export async function getUserByEmail(email: string) {
   return result[0] ?? undefined;
 }
 
-/** 通过手机号查找用户 */
-export async function getUserByPhone(phone: string) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
-  return result[0] ?? undefined;
-}
-
-/** 通过邮箱或手机号查找用户 */
-export async function getUserByEmailOrPhone(emailOrPhone: string) {
-  const db = await getDb();
-  if (!db) return undefined;
-  const result = await db
-    .select()
-    .from(users)
-    .where(or(eq(users.email, emailOrPhone), eq(users.phone, emailOrPhone)))
-    .limit(1);
-  return result[0] ?? undefined;
-}
 
 /** 创建邮箱/手机号注册用户 */
 export async function createLocalUser(data: {

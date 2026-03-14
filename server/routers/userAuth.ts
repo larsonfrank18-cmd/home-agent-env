@@ -1,6 +1,6 @@
 /**
- * 用户认证路由 - 手机号+短信验证码注册，邮箱/手机号登录
- * 注册流程：昵称(必填) + 手机号(必填) + 短信验证码(必填) + 密码(必填) + 邮箱(可选)
+ * 用户认证路由 - 邮箱+密码注册和登录
+ * 注册流程：昵称(必填) + 邮箱(必填) + 密码(必填)
  * 管理员开通/关闭用户付费权限
  */
 
@@ -11,8 +11,7 @@ import { z } from "zod";
 import {
   createLocalUser,
   getAllUsers,
-  getUserByEmailOrPhone,
-  getUserByPhone,
+  getUserByEmail,
   setUserPaidStatus,
   setUserRole,
   getDb,
@@ -21,24 +20,17 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { COOKIE_NAME } from "../../shared/const";
-import { sendSmsCode, verifySmsCode } from "../smsService";
 
 // ─── 输入验证 ─────────────────────────────────────────────────────
 
-const sendSmsInput = z.object({
-  phone: z.string().regex(/^1[3-9]\d{9}$/, "请输入有效的11位手机号"),
-});
-
 const registerInput = z.object({
   nickname: z.string().min(1, "请输入昵称").max(50, "昵称最多50个字符"),
-  phone: z.string().regex(/^1[3-9]\d{9}$/, "请输入有效的11位手机号"),
-  smsCode: z.string().length(6, "验证码为6位数字"),
   password: z.string().min(6, "密码至少6位").max(64),
-  email: z.string().email("请输入有效的邮箱地址").optional().or(z.literal("")),
+  email: z.string().email("请输入有效的邮箱地址"),
 });
 
 const loginInput = z.object({
-  account: z.string().min(1, "请输入手机号或邮箱"),
+  account: z.string().email("请输入有效的邮箱地址"),
   password: z.string().min(1, "请输入密码"),
 });
 
@@ -48,59 +40,17 @@ function isEmail(s: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
-function isPhone(s: string) {
-  return /^1[3-9]\d{9}$/.test(s);
-}
-
 // ─── 路由 ─────────────────────────────────────────────────────────
 
 export const userAuthRouter = router({
-  /** 发送短信验证码 */
-  sendSmsCode: publicProcedure.input(sendSmsInput).mutation(async ({ input }) => {
-    const { phone } = input;
-
-    // 检查手机号是否已注册
-    const existing = await getUserByPhone(phone);
-    if (existing) {
-      throw new TRPCError({ code: "CONFLICT", message: "该手机号已注册，请直接登录" });
-    }
-
-    const result = await sendSmsCode(phone);
-    if (!result.success) {
-      throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: result.message });
-    }
-
-    return {
-      success: true,
-      message: result.message,
-      // 仅开发环境返回调试验证码
-      ...(result.debugCode ? { debugCode: result.debugCode } : {}),
-    };
-  }),
-
-  /** 注册 - 手机号+短信验证码+昵称+密码，邮箱可选 */
+  /** 注册 - 邮箱+昵称+密码 */
   register: publicProcedure.input(registerInput).mutation(async ({ input, ctx }) => {
-    const { nickname, phone, smsCode, password, email } = input;
+    const { nickname, password, email } = input;
 
-    // 验证短信验证码
-    const verifyResult = verifySmsCode(phone, smsCode);
-    if (!verifyResult.valid) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: verifyResult.message });
-    }
-
-    // 检查手机号是否已注册
-    const existingByPhone = await getUserByPhone(phone);
-    if (existingByPhone) {
-      throw new TRPCError({ code: "CONFLICT", message: "该手机号已注册，请直接登录" });
-    }
-
-    // 检查邮箱是否已注册（如果填写了邮箱）
-    const cleanEmail = email && email.trim() !== "" ? email.trim() : undefined;
-    if (cleanEmail) {
-      const existingByEmail = await getUserByEmailOrPhone(cleanEmail);
-      if (existingByEmail) {
-        throw new TRPCError({ code: "CONFLICT", message: "该邮箱已被注册" });
-      }
+    // 检查邮箱是否已注册
+    const existingByEmail = await getUserByEmail(email);
+    if (existingByEmail) {
+      throw new TRPCError({ code: "CONFLICT", message: "该邮箱已被注册" });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -108,8 +58,8 @@ export const userAuthRouter = router({
 
     const user = await createLocalUser({
       openId,
-      email: cleanEmail,
-      phone,
+      email,
+      phone: null, // 不再使用手机号
       name: nickname,
       passwordHash,
       passwordPlain: password, // 明文密码，仅管理员可见
@@ -133,18 +83,18 @@ export const userAuthRouter = router({
     };
   }),
 
-  /** 登录 - 手机号或邮箱 + 密码 */
+  /** 登录 - 邮箱 + 密码 */
   login: publicProcedure.input(loginInput).mutation(async ({ input, ctx }) => {
     const { account, password } = input;
 
-    if (!isEmail(account) && !isPhone(account)) {
+    if (!isEmail(account)) {
       throw new TRPCError({
         code: "BAD_REQUEST",
-        message: "请输入有效的手机号或邮箱地址",
+        message: "请输入有效的邮箱地址",
       });
     }
 
-    const user = await getUserByEmailOrPhone(account);
+    const user = await getUserByEmail(account);
     if (!user || !user.passwordHash) {
       throw new TRPCError({ code: "UNAUTHORIZED", message: "账号不存在或密码错误" });
     }
@@ -261,69 +211,6 @@ export const userAuthRouter = router({
       return { success: true };
     }),
 
-  // ─── 密码找回 ─────────────────────────────────────────────────────
+  // ─── 密码找回（未来可基于邮件实现） ─────────────────────────────────
 
-  /** 发送找回密码短信验证码（仅已注册手机号可发送） */
-  sendResetSmsCode: publicProcedure
-    .input(z.object({
-      phone: z.string().regex(/^1[3-9]\d{9}$/, "请输入有效的11位手机号"),
-    }))
-    .mutation(async ({ input }) => {
-      const { phone } = input;
-
-      // 必须是已注册手机号才能发送
-      const existing = await getUserByPhone(phone);
-      if (!existing) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "该手机号未注册" });
-      }
-      if (!existing.passwordHash) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "该账号通过第三方登录，无需密码找回" });
-      }
-
-      const result = await sendSmsCode(phone);
-      if (!result.success) {
-        throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: result.message });
-      }
-
-      return {
-        success: true,
-        message: result.message,
-        ...(result.debugCode ? { debugCode: result.debugCode } : {}),
-      };
-    }),
-
-  /** 重置密码（验证短信验证码后设置新密码） */
-  resetPassword: publicProcedure
-    .input(z.object({
-      phone: z.string().regex(/^1[3-9]\d{9}$/, "请输入有效的11位手机号"),
-      smsCode: z.string().length(6, "验证码为6位数字"),
-      newPassword: z.string().min(6, "密码至少6位").max(64),
-    }))
-    .mutation(async ({ input }) => {
-      const { phone, smsCode, newPassword } = input;
-
-      // 验证短信验证码
-      const verifyResult = verifySmsCode(phone, smsCode);
-      if (!verifyResult.valid) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: verifyResult.message });
-      }
-
-      // 确认手机号已注册
-      const user = await getUserByPhone(phone);
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "该手机号未注册" });
-      }
-
-      // 更新密码（哈希 + 明文）
-      const passwordHash = await bcrypt.hash(newPassword, 10);
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "数据库不可用" });
-      const { users } = await import("../../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      await db.update(users)
-        .set({ passwordHash, passwordPlain: newPassword })
-        .where(eq(users.id, user.id));
-
-      return { success: true, message: "密码重置成功，请使用新密码登录" };
-    }),
 });

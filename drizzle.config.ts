@@ -11,5 +11,9 @@ export default defineConfig({
   dialect: "mysql",
   dbCredentials: {
     url: connectionString,
+    // Vercel (Debian/Ubuntu) 上的系统 CA 证书路径
+    ssl: {
+      ca: "/etc/ssl/certs/ca-certificates.crt",
+    },
   },
 });
